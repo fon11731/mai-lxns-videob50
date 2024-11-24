@@ -1,6 +1,6 @@
-
+httplib2>=0.22.0
 moviepy>=1.0.3
-pytube>=15.0.0
+pytubefix>=8.5.0
 Pillow>=10.0.0
 requests>=2.31.0
 pysocks>=1.7.1

@@ -6,6 +6,8 @@ import os
 import random
 import time
 
+HTTP_PROXY = "127.0.0.1:7890"
+
 SEARCH_MAX_RESULTS = 3
 DOWNLOAD_HIGH_RES = False
 USE_IMAGE_CACHE = True
@@ -104,12 +106,13 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
 
         sub_data = {
             "id": id,
+            "achievement_title": f"{song['title']} {song['level_label']}",
             "background": __image_path,
             "video": __video_path,
             "duration": duration,
             "start": start,
             "end": end,
-            "text": "这里本来应该有B50瑞平，但是我懒得写了。"
+            "text": "这个人很懒，没有写b50评价。"
         }
         data.append(sub_data)
 
@@ -176,9 +179,8 @@ def start(username):
 
     # 搜索b50视频信息，并写入config文件
     print("#####【2/5】搜索b50视频信息 #####")
-    proxy = "127.0.0.1:7890"
     try:
-        b50_data = search_b50_videos(b50_data, b50_data_file, proxy)
+        b50_data = search_b50_videos(b50_data, b50_data_file, HTTP_PROXY)
     except Exception as e:
         print(f"Error: 搜索视频信息时发生异常: {e}")
         return -1
@@ -303,12 +305,12 @@ def combine_video_test(username):
     full_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
 
 if __name__ == "__main__":
-    # 从 nameid.txt中逐行读取用户名，并调用start函数
-    with open("nameid.txt", "r", encoding="utf-8") as f:
+    # 从 userid.txt中逐行读取用户名，并调用start函数
+    with open("userid.txt", "r", encoding="utf-8") as f:
         for line in f:
             username = line.strip()
-            # print(f"Start: 正在生成{username}的B50视频")
-            # result = -1
-            # while result == -1:
-            #     result = start(username)
-            combine_video_test(username)
+            print(f"Start: 正在生成{username}的B50视频")
+            result = -1
+            while result == -1:
+                result = start(username)
+            # combine_video_test(username)
