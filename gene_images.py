@@ -2,30 +2,6 @@ import os
 import json
 from PIL import Image, ImageDraw, ImageFont
 from utils.Utils import Utils
-import requests
-
-
-def get_b50_data_from_fish(username):
-    url = "https://www.diving-fish.com/api/maimaidxprober/query/player"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "username": username,
-        "b50": "1"
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-
-    if response.status_code == 200:
-        return response.json()
-    elif response.status_code == 400:
-        return {"error": "No such user"}
-    elif response.status_code == 403:
-        return {"error": "User has set privacy or not agreed to the user agreement"}
-    else:
-        return {"error": f"Failed to get data, status code: {response.status_code}"}
 
 
 def generate_b50_images(UserID, b35_data, b15_data, output_dir):

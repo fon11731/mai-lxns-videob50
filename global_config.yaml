@@ -1,0 +1,26 @@
+# 代理设置
+USE_PROXY: true
+#（如果使用 clash，通常无需更改，请检查端口与你的设置是否一致）
+HTTP_PROXY: "127.0.0.1:7890"
+
+# 水鱼查分器用户ID（请替换为你的用户名）
+USER_ID: nickbit
+
+# 视频分辨率设置 (宽度, 高度)
+VIDEO_RES: [1920, 1080]
+
+# 视频片段之间的过渡时间（单位：秒）
+VIDEO_TRANS_TIME: 1.5
+
+# YouTube搜索结果数量限制
+SEARCH_MAX_RESULTS: 3
+
+# 是否使用已有缓存
+# 设置为true将使用全部本地已生成的图片和视频，并不再从互联网上获取数据
+# 仅在视频合并失败或中断时使用
+USE_ALL_CACHE: false
+
+# 是否只生成视频片段
+# true: 只生成单独的视频片段
+# false: 生成完整的合并视频
+ONLY_GENERATE_CLIPS: false

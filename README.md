@@ -27,29 +27,49 @@ Auto search and generate your best 50 videoes of MaimaiDX
 
 - `ImageMagick` 用于图片的格式转换
 
-    在项目`dependencies`文件夹下找到 `ImageMagick-7.1.1-41-Q16-HDRI-x64-dll.exe` 安装包，双击以默认配置安装。正常情况下安装程序会自动将ImageMagick路径添加系统到环境变量中。
+    - Windows:
+
+        在项目`dependencies`文件夹下找到 `ImageMagick-7.1.1-41-Q16-HDRI-x64-dll.exe` 安装包，双击以默认配置安装。正常情况下安装程序会自动将ImageMagick路径添加系统到环境变量中。
+    
+    - Linux:
+
+        使用以下命令安装ImageMagick：
+
+        ```bash
+        sudo apt-get install -y imagemagick
+        ```
 
     使用以下命令检查ImageMagick是否安装成功：
 
     ```bash
     magick -version
-    ```
+    ``` 
 
 - `ffmpeg` 用于视频的编码和解码
 
-    从 [CODEX FFMPEG](https://www.gyan.dev/ffmpeg/builds/) 下载 `ffmpeg-release-essentials.zip` 文件，解压文件到你的电脑上的任意目录后，将 `bin` 目录所在路径添加到系统环境变量中。
+    - Windows:
 
-    > 如果你不了解如何配置系统环境变量，请自行搜索相关教程。配置完环境变量后需要重启终端方可生效
+        从 [CODEX FFMPEG](https://www.gyan.dev/ffmpeg/builds/) 下载 `ffmpeg-release-essentials.zip` 文件，解压文件到你的电脑上的任意目录后，将 `bin` 目录所在路径添加到系统环境变量中。
 
-    使用以下命令检查ffmpeg是否安装成功：
+        > 如果你不了解如何配置系统环境变量，请自行搜索相关教程。配置完环境变量后需要重启终端方可生效
+    
+    - Linux:
 
-    ```bash
-    ffmpeg
-    ```
+        使用以下命令安装ffmpeg：
+
+        ```bash
+        sudo apt-get install -y ffmpeg
+        ```
 
 ### 测试系统的功能是否正常
 
-运行 `test.py` 文件，如果程序输出以下内容，并在`./videos`文件夹下获得一个空白视频文件，则说明系统功能正常。
+运行 `test.py` ：
+
+```bash
+python test.py
+```
+
+如果程序输出以下内容，并在`./videos`文件夹下获得一个`test.mp4`的5秒钟视频文件，则说明系统功能正常。
 
 ### 配置相关参数
 
@@ -67,7 +87,7 @@ Auto search and generate your best 50 videoes of MaimaiDX
 
 - `SEARCH_MAX_RESULTS` ：设置为从youtube上搜索视频时，最多搜索到的视频数量。
 
-- `USE_IMAGE_CACHE` ：生成图片和视频需要一定时间。如果设置为`true`，则使用本地已经生成的缓存，从而跳过重新生成的步骤，推荐在以获取过数据但是合成视频失败或中断后使用。如果你需要从水鱼更新新的b50数据，请设置为`false`。
+- `USE_ALL_CACHE` ：生成图片和视频需要一定时间。如果设置为`true`，则使用本地已经生成的缓存，从而跳过重新生成的步骤，推荐在已经获取过数据但是合成视频失败或中断后使用。如果你需要从水鱼更新新的b50数据，请设置为`false`。
 
 - `ONLY_GENERATE_CLIPS` ：设置为是否只生成视频片段，如果设置为`true`，则只会在`./videos/{USER_ID}`文件夹下生成每个b的视频片段，而不会生成完整的视频。
 
@@ -78,11 +98,11 @@ Auto search and generate your best 50 videoes of MaimaiDX
 
 1. 运行`pre_gen.py`文件，程序将会自动查询您的最新b50数据，并抓取相关谱面确认视频。
 
-```bash
-python pre_gen.py
-```
+    ```bash
+    python pre_gen.py
+    ```
 
-    > 如果在这一步骤期间遇到网络异常，可以重新运行`pre_gen.py`文件，程序将会从上一次中断处继续执行。
+    > 如果在这一步骤期间遇到网络异常等问题导致程序中断，可以重新运行`pre_gen.py`文件，程序将会从上一次中断处继续执行。
 
 2. 执行完毕后，请检查如下文件是否生成：
 
@@ -90,9 +110,9 @@ python pre_gen.py
 
     在`./b50_images/{USER_ID}`文件夹下可以找到所有生成的成绩图片。
 
-    在`./videos/downloads/{USER_ID}`文件夹下可以找到所有已下载的谱面确认视频。
+    在`./videos/downloads`文件夹下可以找到所有已下载的谱面确认视频。
 
-    下面你需要手动进行如下操作（我们正在考虑设计前端页面以优化这部分流程）：
+    下面你需要手动进行如下操作（**我们正在考虑设计前端页面以优化这部分流程**）：
 
     - 打开`video_config_{USER_ID}.json`文件，在每条数据的`text`字段中填写你要展示的评论。
 
