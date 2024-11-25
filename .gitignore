@@ -1,3 +1,5 @@
+*.mp3
+
 # B50 cache directories
 b50_datas/
 b50_images/
