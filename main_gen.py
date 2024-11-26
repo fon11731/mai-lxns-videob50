@@ -71,13 +71,13 @@ def video_generation_test():
     with open(config_output_file, "r", encoding="utf-8") as f:
         configs = json.load(f)
 
-    main_configs = configs['main'][:1]
+    main_configs = configs['main'][20:21]
 
     # generate video clips
     for resource in main_configs:
         clip = create_video_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
-        # clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
-        clip.save_frame(os.path.join(video_output_path, f"{resource['id']}.png"), t=1)
+        clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+        # clip.show()
 
     # generate full video
     # full_video = create_full_video(configs[35:], resolution=(1920, 1080), font_path=FONT_PATH, trans_time=1.5)

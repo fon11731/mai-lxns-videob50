@@ -1,46 +1,9 @@
 import os
 import shutil
 import numpy as np
-from PIL import Image, ImageFilter
-
-def get_imagemagick_binary():
-    if os.name == 'nt':  # Windows
-        # 使用 shutil 查找可执行文件的完整路径
-        magick_path = shutil.which('magick')
-        if not magick_path:
-            # 如果在 PATH 中找不到，尝试常见的安装路径
-            common_paths = [
-                r"C:\Program Files\ImageMagick-7.1.1-Q16\magick.exe",
-                r"C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe",
-            ]
-            for path in common_paths:
-                if os.path.exists(path):
-                    return path
-            raise FileNotFoundError("ImageMagick not found. Please install it and add to PATH")
-        return magick_path
-    else:  # Linux/Mac
-        convert_path = shutil.which('convert')
-        if not convert_path:
-            raise FileNotFoundError("ImageMagick not found. Please install it and add to PATH")
-        return convert_path
-    
-# 设置ImageMagick路径，请确保在运行前安装ImageMagick了并勾选了添加到环境变量
-assert os.path.exists(get_imagemagick_binary())
-os.environ['IMAGEMAGICK_BINARY'] = get_imagemagick_binary()
-
-# 如果环境变量不起作用，手动指定ImageMagick的可执行文件路径：
-# from moviepy.config import change_settings
-# change_settings({"IMAGEMAGICK_BINARY": r"C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe"})
-
-from moviepy.editor import ImageClip, VideoFileClip, TextClip, CompositeVideoClip, concatenate_videoclips, CompositeAudioClip
 import json
-
-
-def load_resources(json_file):
-    with open(json_file, 'r') as file:
-        data = json.load(file)
-    return data
-
+from PIL import Image, ImageFilter
+from moviepy import VideoFileClip, ImageClip, TextClip, CompositeVideoClip, concatenate_videoclips, CompositeAudioClip
 
 def create_blank_image(width, height, color=(0, 0, 0, 0)):
     """创建一个透明的图片"""
@@ -75,7 +38,7 @@ def blur_image(image_path, blur_radius=5):
         return np.array(Image.open(image_path))
 
 
-def create_video_segment(clip_config, resolution, font_path, text_size=28):
+def create_video_segment(clip_config, resolution, font_path, text_size=28, inline_max_bytes=72):
     print(f"正在合成视频片段: {clip_config['id']}")
     
     # 默认的底部背景
@@ -83,10 +46,10 @@ def create_video_segment(clip_config, resolution, font_path, text_size=28):
     
     # 检查背景图片是否存在
     if 'main_image' in clip_config and os.path.exists(clip_config['main_image']):
-        main_image = ImageClip(clip_config['main_image']).set_duration(clip_config['duration'])
+        main_image = ImageClip(clip_config['main_image']).with_duration(clip_config['duration'])
     else:
         print(f"Video Generator Warning: {clip_config['id']} 没有对应的成绩图, 请检查成绩图资源是否已生成")
-        main_image = ImageClip(create_blank_image(resolution[0], resolution[1])).set_duration(clip_config['duration'])
+        main_image = ImageClip(create_blank_image(resolution[0], resolution[1])).with_duration(clip_config['duration'])
 
     # 读取song_id，并获取预览图jacket
     __musicid = str(clip_config['song_id'])[-4:].zfill(4)
@@ -95,18 +58,19 @@ def create_video_segment(clip_config, resolution, font_path, text_size=28):
         # 高斯模糊处理图片
         jacket_array = blur_image(__jacket_path, blur_radius=5)
         # 创建 ImageClip
-        jacket_image = ImageClip(jacket_array).set_duration(clip_config['duration'])
+        jacket_image = ImageClip(jacket_array).with_duration(clip_config['duration'])
         # 将jacket图片按视频分辨率宽度等比例缩放，以填充整个背景
-        jacket_image = jacket_image.resize(height=resolution[0], width=resolution[0])
+        jacket_image = jacket_image.resized(height=resolution[0], width=resolution[0])
     else:
         print(f"Video Generator Warning: {clip_config['id']} 没有找到对应的封面图, 将使用默认背景")
-        jacket_image = ImageClip(default_bg_path).set_duration(clip_config['duration'])
+        jacket_image = ImageClip(default_bg_path).with_duration(clip_config['duration'])
 
     # 检查视频是否存在
     if 'video' in clip_config and os.path.exists(clip_config['video']):
-        video_clip = VideoFileClip(clip_config['video']).subclip(clip_config['start'], clip_config['end'])
+        video_clip = VideoFileClip(clip_config['video']).subclipped(start_time=clip_config['start'], 
+                                                                    end_time=clip_config['end'])
         # 将视频预览等比例地缩放
-        video_clip = video_clip.resize(height=540/1080 * resolution[1], width=540/1080 * resolution[0])
+        video_clip = video_clip.resized(height=540/1080 * resolution[1], width=540/1080 * resolution[0])
         
         # 裁剪成正方形
         video_height = video_clip.h
@@ -115,7 +79,7 @@ def create_video_segment(clip_config, resolution, font_path, text_size=28):
         crop_size = video_height
         x1 = x_center - (crop_size / 2)
         x2 = x_center + (crop_size / 2)
-        video_clip = video_clip.crop(x1=x1, y1=0, x2=x2, y2=video_height)
+        video_clip = video_clip.cropped(x1=x1, y1=0, x2=x2, y2=video_height)
     else:
         print(f"Video Generator Warning:{clip_config['id']} 没有对应的视频, 请检查本地资源")
         # 创建一个透明的视频片段
@@ -123,27 +87,35 @@ def create_video_segment(clip_config, resolution, font_path, text_size=28):
             int(540/1080 * resolution[1]),  # 使用相同的尺寸计算
             int(540/1080 * resolution[1])   
         )
-        video_clip = ImageClip(blank_frame).set_duration(clip_config['duration'])
+        video_clip = ImageClip(blank_frame).with_duration(clip_config['duration'])
 
     # 计算位置
     video_pos = (int(0.092 * resolution[0]), int(0.328 * resolution[1]))
-    text_pos = (int(0.56 * resolution[0]), int(0.56 * resolution[1]))
+    text_pos = (int(0.54 * resolution[0]), int(0.54 * resolution[1]))
 
     # 创建文字
-    txt_clip = TextClip(clip_config['text'], fontsize=text_size, color='white', font=font_path)
-    txt_clip = txt_clip.set_duration(clip_config['duration'])
+    text_list = get_splited_text(clip_config['text'], text_max_bytes=inline_max_bytes)
+    txt_clip = TextClip(font=font_path, text="\n".join(text_list),
+                        method = "label",
+                        # size=(text_max_width, text_max_height), 
+                        font_size=text_size,
+                        margin=(20, 20),
+                        interline=6.5,
+                        vertical_align="top",
+                        color="white",
+                        duration=clip_config['duration'])
 
     # 视频叠放顺序，从下往上：背景底图，谱面预览，图片（带有透明通道），文字
     composite_clip = CompositeVideoClip([
-            jacket_image.set_position((0, -0.5), relative=True),
-            video_clip.set_position((video_pos[0], video_pos[1])),
-            main_image.set_position((0, 0)),
-            txt_clip.set_position((text_pos[0], text_pos[1]))
+            jacket_image.with_position((0, -0.5), relative=True),
+            video_clip.with_position((video_pos[0], video_pos[1])),
+            main_image.with_position((0, 0)),
+            txt_clip.with_position((text_pos[0], text_pos[1]))
         ],
         size=resolution
     )
 
-    return composite_clip.set_duration(clip_config['duration'])
+    return composite_clip.with_duration(clip_config['duration'])
 
 
 def normalize_audio_volume(clip, target_dbfs=-20):
@@ -209,11 +181,11 @@ def create_full_video(resources, resolution, font_path, trans_time=1, transition
             clips.append(clip)
         else:
             # 为前一个片段添加音频渐出效果
-            clips[-1] = clips[-1].audio_fadeout(trans_time)
+            clips[-1] = clips[-1].with_audio_fadeout(trans_time)
             # 为当前片段添加音频渐入效果和视频渐入效果
-            current_clip = clip.audio_fadein(trans_time).crossfadein(trans_time)
+            current_clip = clip.with_audio_fadein(trans_time).with_crossfadein(trans_time)
             # 设置片段开始时间
-            clips.append(current_clip.set_start(clips[-1].end - trans_time))
+            clips.append(current_clip.with_start(clips[-1].end - trans_time))
     
     for clip_config in ending_configs:
         pass
@@ -272,12 +244,49 @@ def combine_full_video_from_existing_clips(video_clip_path, resolution, trans_ti
             clips.append(clip)
         else:
             # 为前一个片段添加音频渐出效果
-            clips[-1] = clips[-1].audio_fadeout(trans_time)
+            clips[-1] = clips[-1].with_audio_fadeout(trans_time)
             # 为当前片段添加音频渐入效果和视频渐入效果
-            current_clip = clip.audio_fadein(trans_time).crossfadein(trans_time)
+            current_clip = clip.with_audio_fadein(trans_time).with_crossfadein(trans_time)
             # 设置片段开始时间
-            clips.append(current_clip.set_start(clips[-1].end - trans_time))
+            clips.append(current_clip.with_start(clips[-1].end - trans_time))
 
     final_video = CompositeVideoClip(clips, size=resolution)
     return final_video
+
+def get_splited_text(text, text_max_bytes=60):
+    """
+    将说明文本按照最大字节数限制切割成多行
+    
+    Args:
+        text (str): 输入文本
+        text_max_bytes (int): 每行最大字节数限制（utf-8编码）
+        
+    Returns:
+        str: 按规则切割并用换行符连接的文本
+    """
+    lines = []
+    current_line = ""
+    
+    # 按现有换行符先分割
+    for line in text.split('\n'):
+        current_bytes = 0
+        current_line = ""
+        
+        for char in line:
+            char_bytes = len(char.encode('utf-8'))
+            
+            # 如果添加这个字符会超出限制，保存当前行并重新开始
+            if current_bytes + char_bytes > text_max_bytes:
+                lines.append(current_line)
+                current_line = char
+                current_bytes = char_bytes
+            else:
+                current_line += char
+                current_bytes += char_bytes
+        
+        # 处理剩余的字符
+        if current_line:
+            lines.append(current_line)
+    
+    return lines
 
