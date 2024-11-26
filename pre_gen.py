@@ -139,6 +139,9 @@ def download_b50_videos(b50_data, video_download_path):
                         output_name=clip_name, 
                         output_path=video_download_path, 
                         high_res=False)
+        
+        # 等待5-10秒，以减少被检测为bot的风险
+        time.sleep(random.randint(5, 10))
         print("\n")
 
 

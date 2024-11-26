@@ -110,5 +110,5 @@ def combine_video_test(username):
     full_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
 
 if __name__ == "__main__":
-    # start()
-    video_generation_test()
+    start()
+    # video_generation_test()

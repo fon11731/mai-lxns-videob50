@@ -50,9 +50,6 @@ def download_video(video_url, output_name, output_path, high_res=False):
                 output_file = os.path.join(output_path, new_filename)
                 os.rename(downloaded_file, output_file)
                 print(f"下载完成，存储为: {new_filename}")
-            
-            # 等待15-30秒，以减少被检测为bot的风险
-            time.sleep(random.randint(15, 30))
 
             return output_file
             
