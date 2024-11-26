@@ -143,7 +143,34 @@ def download_b50_videos(b50_data, video_download_path):
 
 
 def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random_length=False):
-    data = []
+
+    intro_clip_data = {
+        "id": "intro_1",
+        "duration": 10,
+        "text_lines": [
+            "自我介绍部分 第1行",
+            "自我介绍部分 第2行",
+            "自我介绍部分 第3行",
+        ],
+    }
+
+    ending_clip_data = {
+        "id": "ending_1",
+        "duration": 10,
+        "text_lines": [
+            "结束语部分 第1行",
+            "结束语部分 第2行",
+        ],
+    }
+
+    video_config_data = {
+        "intro": [intro_clip_data],
+        "ending": [ending_clip_data],
+        "main": [],
+    }
+
+    main_clips = []
+
     for song in b50_data:
         if not song['clip_id']:
             print(f"Error: 没有找到 {song['title']}-{song['level_label']}-{song['type']} 的clip_id，请检查数据格式，跳过该片段。")
@@ -172,22 +199,30 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
             start = 10
             end = 25
 
-        sub_data = {
+        main_clip_data = {
             "id": id,
             "achievement_title": f"{song['title']}-{song['level_label']}-{song['type']}",
-            "background": __image_path,
+            "song_id": song['song_id'],
+            "level_index": song['level_index'],
+            "type": song['type'],
+            "main_image": __image_path,
             "video": __video_path,
             "duration": duration,
             "start": start,
             "end": end,
             "text": "这个人很懒，没有写b50评价。"
         }
-        data.append(sub_data)
+        main_clips.append(main_clip_data)
+
+    # 倒序排列（b15在前，b35在后）
+    main_clips.reverse()
+
+    video_config_data["main"] = main_clips
 
     with open(ouput_file, 'w', encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
+        json.dump(video_config_data, file, ensure_ascii=False, indent=4)
 
-    return data
+    return video_config_data
 
 
 def pre_gen():
@@ -209,8 +244,6 @@ def pre_gen():
     search_max_results = global_config["SEARCH_MAX_RESULTS"]
     use_all_cache = global_config["USE_ALL_CACHE"]
 
-    print(f"当前查询的水鱼用户名: {username}")
-
     # 创建缓存文件夹
     cache_pathes = [
         f"./b50_datas",
@@ -225,48 +258,54 @@ def pre_gen():
     b50_raw_file = f"./b50_datas/b50_raw_{username}.json"
     b50_data_file = f"./b50_datas/b50_config_{username}.json"
 
-    print("#####【1/4】获取用户的b50数据 #####")
-    b50_data = update_b50_data(b50_raw_file, b50_data_file, username)
+    if not use_all_cache:
+        print("#####【1/4】获取用户的b50数据 #####")
+        print(f"当前查询的水鱼用户名: {username}")
+        b50_data = update_b50_data(b50_raw_file, b50_data_file, username)
 
-    print("#####【2/4】搜索b50视频信息 #####")
-    try:
-        if use_proxy:
-            b50_data = search_b50_videos(b50_data, b50_data_file, search_max_results, proxy)
-        else:
-            b50_data = search_b50_videos(b50_data, b50_data_file, search_max_results)
-    except Exception as e:
-        print(f"Error: 搜索视频信息时发生异常: {e}")
-        return -1
-    
-    # 下载谱面确认视频
-    print("#####【3/4】下载谱面确认视频 #####")
-    video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
-    try:
-        download_b50_videos(b50_data, video_download_path)
-    except Exception as e:
-        print(f"Error: 下载视频时发生异常: {e}")
-        return -1
-    
+        print("#####【2/4】搜索b50视频信息 #####")
+        try:
+            if use_proxy:
+                b50_data = search_b50_videos(b50_data, b50_data_file, search_max_results, proxy)
+            else:
+                b50_data = search_b50_videos(b50_data, b50_data_file, search_max_results)
+        except Exception as e:
+            print(f"Error: 搜索视频信息时发生异常: {e}")
+            return -1
+        
+        # 下载谱面确认视频
+        print("#####【3/4】下载谱面确认视频 #####")
+        video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
+        try:
+            download_b50_videos(b50_data, video_download_path)
+        except Exception as e:
+            print(f"Error: 下载视频时发生异常: {e}")
+            return -1
+        
 
-    # 生成b50图片
-    print("#####【4/4】生成b50背景图片 #####")
-    image_output_path = f"./b50_images/{username}"
-    if not os.path.exists(image_output_path):
-        os.makedirs(image_output_path)
+        # 生成b50图片
+        print("#####【4/4】生成b50背景图片 #####")
+        image_output_path = f"./b50_images/{username}"
+        if not os.path.exists(image_output_path):
+            os.makedirs(image_output_path)
 
-    # # check if image_output_path has png files
-    # if len(os.listdir(image_output_path)) != 0:
-    #     # delete all files in image_output_path
-    #     for file in os.listdir(image_output_path):
-    #         os.remove(os.path.join(image_output_path, file))
+        # # check if image_output_path has png files
+        # if len(os.listdir(image_output_path)) != 0:
+        #     # delete all files in image_output_path
+        #     for file in os.listdir(image_output_path):
+        #         os.remove(os.path.join(image_output_path, file))
 
-    b35_data = b50_data[:35]
-    b15_data = b50_data[35:]
-    try:
-        generate_b50_images(username, b35_data, b15_data, image_output_path)
-    except Exception as e:
-        print(f"Error: 生成图片时发生异常: {e}")
-        return 1
+        b35_data = b50_data[:35]
+        b15_data = b50_data[35:]
+        try:
+            generate_b50_images(username, b35_data, b15_data, image_output_path)
+        except Exception as e:
+            print(f"Error: 生成图片时发生异常: {e}")
+            return 1
+    else:
+        print(f"#####【已配置 USE_ALL_CACHE=true ，使用本地缓存数据直接生成配置文件】 #####")
+        print(f"##### 当前配置的水鱼用户名: {username} #####")
+        print(f"##### 如要求更新数据，请配置 USE_ALL_CACHE=false #####")
     
     # 配置视频生成的配置文件
     config_output_file = f"./b50_datas/video_configs_{username}.json"

@@ -56,7 +56,7 @@ def start():
     return 0
 
 
-def full_video_generation_test():
+def video_generation_test():
     username = "nickbit"
 
     video_output_path = "./videos/test"
@@ -71,14 +71,17 @@ def full_video_generation_test():
     with open(config_output_file, "r", encoding="utf-8") as f:
         configs = json.load(f)
 
+    main_configs = configs['main'][:1]
+
     # generate video clips
-    # for resource in configs[:2]:
-    #     clip = create_video_segment(resource, resolution=VIDEO_RES, font_path=FONT_PATH)
-    #     clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
-    
+    for resource in main_configs:
+        clip = create_video_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
+        # clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+        clip.save_frame(os.path.join(video_output_path, f"{resource['id']}.png"), t=1)
+
     # generate full video
-    full_video = create_full_video(configs[35:], resolution=(1920, 1080), font_path=FONT_PATH, trans_time=1.5)
-    full_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+    # full_video = create_full_video(configs[35:], resolution=(1920, 1080), font_path=FONT_PATH, trans_time=1.5)
+    # full_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
 
 
 def combine_video_test(username):
@@ -89,4 +92,5 @@ def combine_video_test(username):
     full_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
 
 if __name__ == "__main__":
-    start()
+    # start()
+    video_generation_test()

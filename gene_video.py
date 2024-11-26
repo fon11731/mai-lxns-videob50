@@ -1,7 +1,7 @@
 import os
 import shutil
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 def get_imagemagick_binary():
     if os.name == 'nt':  # Windows
@@ -50,22 +50,61 @@ def create_blank_image(width, height, color=(0, 0, 0, 0)):
     return np.array(image)
 
 
-def create_video_segment(resource, resolution, font_path, text_size=28):
-    print(f"正在合成视频片段: {resource['id']}")
+def create_info_segment(clip_config, resolution, font_path, text_size=28):
+    pass
+
+
+def blur_image(image_path, blur_radius=5):
+    """
+    对图片进行高斯模糊处理
     
-    # 创建底部背景
-    bg_image = ImageClip("./images/VideoUnderBase.png").set_duration(resource['duration'])
+    Args:
+        image_path (str): 图片路径
+        blur_radius (int): 模糊半径，默认为10
+        
+    Returns:
+        numpy.ndarray: 模糊处理后的图片数组
+    """
+    try:
+        pil_image = Image.open(image_path)
+        blurred_image = pil_image.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+        # 将模糊后的图片转换为 numpy 数组
+        return np.array(blurred_image)
+    except Exception as e:
+        print(f"Warning: 图片模糊处理失败 - {str(e)}")
+        return np.array(Image.open(image_path))
+
+
+def create_video_segment(clip_config, resolution, font_path, text_size=28):
+    print(f"正在合成视频片段: {clip_config['id']}")
+    
+    # 默认的底部背景
+    default_bg_path = "./images/VideoUnderBase.png"
     
     # 检查背景图片是否存在
-    if 'background' in resource and os.path.exists(resource['background']):
-        main_image = ImageClip(resource['background']).set_duration(resource['duration'])
+    if 'main_image' in clip_config and os.path.exists(clip_config['main_image']):
+        main_image = ImageClip(clip_config['main_image']).set_duration(clip_config['duration'])
     else:
-        print(f"Video Generator Warning:{resource['id']} 没有对应的图片, 请检查本地资源")
-        main_image = ImageClip(create_blank_image(resolution[0], resolution[1])).set_duration(resource['duration'])
+        print(f"Video Generator Warning: {clip_config['id']} 没有对应的成绩图, 请检查成绩图资源是否已生成")
+        main_image = ImageClip(create_blank_image(resolution[0], resolution[1])).set_duration(clip_config['duration'])
+
+    # 读取song_id，并获取预览图jacket
+    __musicid = str(clip_config['song_id'])[-4:].zfill(4)
+    __jacket_path = f"./images/Jackets/UI_Jacket_00{__musicid}.png"
+    if os.path.exists(__jacket_path):
+        # 高斯模糊处理图片
+        jacket_array = blur_image(__jacket_path, blur_radius=5)
+        # 创建 ImageClip
+        jacket_image = ImageClip(jacket_array).set_duration(clip_config['duration'])
+        # 将jacket图片按视频分辨率宽度等比例缩放，以填充整个背景
+        jacket_image = jacket_image.resize(height=resolution[0], width=resolution[0])
+    else:
+        print(f"Video Generator Warning: {clip_config['id']} 没有找到对应的封面图, 将使用默认背景")
+        jacket_image = ImageClip(default_bg_path).set_duration(clip_config['duration'])
 
     # 检查视频是否存在
-    if 'video' in resource and os.path.exists(resource['video']):
-        video_clip = VideoFileClip(resource['video']).subclip(resource['start'], resource['end'])
+    if 'video' in clip_config and os.path.exists(clip_config['video']):
+        video_clip = VideoFileClip(clip_config['video']).subclip(clip_config['start'], clip_config['end'])
         # 将视频预览等比例地缩放
         video_clip = video_clip.resize(height=540/1080 * resolution[1], width=540/1080 * resolution[0])
         
@@ -78,25 +117,25 @@ def create_video_segment(resource, resolution, font_path, text_size=28):
         x2 = x_center + (crop_size / 2)
         video_clip = video_clip.crop(x1=x1, y1=0, x2=x2, y2=video_height)
     else:
-        print(f"Video Generator Warning:{resource['id']} 没有对应的视频, 请检查本地资源")
+        print(f"Video Generator Warning:{clip_config['id']} 没有对应的视频, 请检查本地资源")
         # 创建一个透明的视频片段
         blank_frame = create_blank_image(
             int(540/1080 * resolution[1]),  # 使用相同的尺寸计算
-            int(540/1080 * resolution[1])   # 正方形，所以宽高相同
+            int(540/1080 * resolution[1])   
         )
-        video_clip = ImageClip(blank_frame).set_duration(resource['duration'])
+        video_clip = ImageClip(blank_frame).set_duration(clip_config['duration'])
 
     # 计算位置
     video_pos = (int(0.092 * resolution[0]), int(0.328 * resolution[1]))
     text_pos = (int(0.56 * resolution[0]), int(0.56 * resolution[1]))
 
     # 创建文字
-    txt_clip = TextClip(resource['text'], fontsize=text_size, color='white', font=font_path)
-    txt_clip = txt_clip.set_duration(resource['duration'])
+    txt_clip = TextClip(clip_config['text'], fontsize=text_size, color='white', font=font_path)
+    txt_clip = txt_clip.set_duration(clip_config['duration'])
 
     # 视频叠放顺序，从下往上：背景底图，谱面预览，图片（带有透明通道），文字
     composite_clip = CompositeVideoClip([
-            bg_image.set_position((0, 0)),
+            jacket_image.set_position((0, -0.5), relative=True),
             video_clip.set_position((video_pos[0], video_pos[1])),
             main_image.set_position((0, 0)),
             txt_clip.set_position((text_pos[0], text_pos[1]))
@@ -104,7 +143,7 @@ def create_video_segment(resource, resolution, font_path, text_size=28):
         size=resolution
     )
 
-    return composite_clip.set_duration(resource['duration'])
+    return composite_clip.set_duration(clip_config['duration'])
 
 
 def normalize_audio_volume(clip, target_dbfs=-20):
@@ -151,10 +190,18 @@ def normalize_audio_volume(clip, target_dbfs=-20):
 
 
 def create_full_video(resources, resolution, font_path, trans_time=1, transition=None):
+
+    intro_configs = resources['intro']
+    ending_configs = resources['ending']
+    main_configs = resources['main']
+
     clips = []
 
-    for resource in resources:
-        clip = create_video_segment(resource, resolution, font_path)
+    for clip_config in intro_configs:
+        pass
+
+    for clip_config in main_configs:
+        clip = create_video_segment(clip_config, resolution, font_path)
         # 对视频片段进行音频响度均衡化
         clip = normalize_audio_volume(clip)
         
@@ -167,6 +214,9 @@ def create_full_video(resources, resolution, font_path, trans_time=1, transition
             current_clip = clip.audio_fadein(trans_time).crossfadein(trans_time)
             # 设置片段开始时间
             clips.append(current_clip.set_start(clips[-1].end - trans_time))
+    
+    for clip_config in ending_configs:
+        pass
 
     final_video = CompositeVideoClip(clips, size=resolution)
     return final_video
@@ -230,13 +280,4 @@ def combine_full_video_from_existing_clips(video_clip_path, resolution, trans_ti
 
     final_video = CompositeVideoClip(clips, size=resolution)
     return final_video
-
-
-if __name__ == "__main__":
-    # gene_resource_config("./b50_images/nickbit", "./videos", "./b50_datas/video_configs.json")
-    # Example usage
-    json_file = "./b50_datas/video_configs.json"
-    final_video = create_full_video(json_file, resolution=(1280, 720), text_position='center', clip_position=(100, 100),
-                                    transition='compose')
-    final_video.write_videofile('./videos/output.mp4', fps=24, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
 
