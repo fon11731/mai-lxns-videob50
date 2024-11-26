@@ -147,20 +147,13 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
     intro_clip_data = {
         "id": "intro_1",
         "duration": 10,
-        "text_lines": [
-            "自我介绍部分 第1行",
-            "自我介绍部分 第2行",
-            "自我介绍部分 第3行",
-        ],
+        "text": "【请填写前言部分】"
     }
 
     ending_clip_data = {
         "id": "ending_1",
         "duration": 10,
-        "text_lines": [
-            "结束语部分 第1行",
-            "结束语部分 第2行",
-        ],
+        "text": "【请填写后记部分】"
     }
 
     video_config_data = {
@@ -210,7 +203,7 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
             "duration": duration,
             "start": start,
             "end": end,
-            "text": "这个人很懒，没有写b50评价。"
+            "text": "【请填写b50评价】"
         }
         main_clips.append(main_clip_data)
 

@@ -1,8 +1,6 @@
-from gene_video import create_video_segment, create_full_video, combine_full_video_from_existing_clips
+from gene_video import create_video_segment, create_info_segment, create_full_video, combine_full_video_from_existing_clips
 import json
 import os
-import random
-import time
 import yaml
 
 FONT_PATH = "./font/SOURCEHANSANSSC-BOLD.OTF"
@@ -16,6 +14,7 @@ def start():
     username = global_config["USER_ID"]
     use_all_cache = global_config["USE_ALL_CACHE"]
     video_res = global_config["VIDEO_RES"]
+    video_trans_enable = global_config["VIDEO_TRANS_ENABLE"]
     video_trans_time = global_config["VIDEO_TRANS_TIME"]
     only_generate_clips = global_config["ONLY_GENERATE_CLIPS"]
 
@@ -42,18 +41,18 @@ def start():
             print(f"正在合成视频片段: {resource['id']}")
             clip = create_video_segment(resource, resolution=video_res, font_path=FONT_PATH)
             clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), 
-                                 fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+                                 fps=30, threads=4, preset='ultrafast', bitrate='5000k')
 
     else:
         print("[INFO] 合成完整视频，可能需要一段时间")
         try:
-            final_video = create_full_video(configs, resolution=video_res, font_path=FONT_PATH, trans_time=video_trans_time)
+            final_video = create_full_video(configs, resolution=video_res, font_path=FONT_PATH, 
+                                            auto_add_transition=video_trans_enable, 
+                                            trans_time=video_trans_time)
             final_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), 
-                                        fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+                                        fps=30, threads=4, preset='ultrafast', bitrate='5000k')
         except Exception as e:
             print(f"Error: 合成完整视频时发生异常: {e}")
-            return 1
-    return 0
 
 
 def video_generation_test():
@@ -71,18 +70,37 @@ def video_generation_test():
     with open(config_output_file, "r", encoding="utf-8") as f:
         configs = json.load(f)
 
+    intro_configs = configs['intro']
     main_configs = configs['main'][20:21]
+    ending_configs = configs['ending']
 
-    # generate video clips
+    test_resources = {
+        'intro': intro_configs,
+        'main': main_configs,
+        'ending': ending_configs
+    }
+
+    # for resource in intro_configs:
+    #     clip = create_info_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
+    #     # clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+    #     clip.show()
+    
     for resource in main_configs:
         clip = create_video_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
-        clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+        clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), 
+                             fps=30, threads=4, preset='ultrafast', bitrate='5000k')
         # clip.show()
+    
+    # for resource in ending_configs:
+    #     clip = create_info_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
+    #     clip.show()
 
     # generate full video
-    # full_video = create_full_video(configs[35:], resolution=(1920, 1080), font_path=FONT_PATH, trans_time=1.5)
-    # full_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
-
+    # full_video = create_full_video(test_resources, resolution=(1920, 1080), 
+    #                                font_path=FONT_PATH, auto_add_transition=True, trans_time=1)
+    # full_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), 
+    #                            fps=30, threads=4, preset='ultrafast', bitrate='5000k')
+    # full_video.show()
 
 def combine_video_test(username):
     print(f"Start: 正在合并{username}的B50视频")
