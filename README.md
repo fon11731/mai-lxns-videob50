@@ -105,7 +105,9 @@ MoviePy - video ready videos/test/test_video.mp4
 
 在 `global_congfig.yaml` 文件中，配置以下信息：
 
-- `HTTP_PROXY` ：本项目当前从youtube上搜索和下载谱面确认视频，可能需要开启网络代理才可以正常访问，将其设置为你的代理地址（如果你使用clash等代理工具，请设置为`"127.0.0.1:7890"`）。
+- `USE_PROXY` ：设置是否启用网络代理，如果设置为`true`，则启用代理，否则不启用。
+
+- `HTTP_PROXY` 如果开启网络代理，将其设置为你的代理地址（如果你使用clash等代理工具，请设置为`"127.0.0.1:7890"`）。
 
 - `USER_ID` ：设置为你的水鱼用户ID。
 
