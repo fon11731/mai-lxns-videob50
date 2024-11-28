@@ -1,5 +1,4 @@
 import os
-import shutil
 import numpy as np
 import json
 from PIL import Image, ImageFilter
@@ -22,20 +21,24 @@ def get_splited_text(text, text_max_bytes=60):
     
     # 按现有换行符先分割
     for line in text.split('\n'):
-        current_bytes = 0
+        current_length = 0
         current_line = ""
         
         for char in line:
-            char_bytes = len(char.encode('utf-8'))
+            # 计算字符长度：中日文为2，其他为1
+            if '\u4e00' <= char <= '\u9fff' or '\u3040' <= char <= '\u30ff':
+                char_length = 2
+            else:
+                char_length = 1
             
             # 如果添加这个字符会超出限制，保存当前行并重新开始
-            if current_bytes + char_bytes > text_max_bytes:
+            if current_length + char_length > text_max_bytes:
                 lines.append(current_line)
                 current_line = char
-                current_bytes = char_bytes
+                current_length = char_length
             else:
                 current_line += char
-                current_bytes += char_bytes
+                current_length += char_length
         
         # 处理剩余的字符
         if current_line:
@@ -118,7 +121,7 @@ def normalize_audio_volume(clip, target_dbfs=-20):
         return clip
 
 
-def create_info_segment(clip_config, resolution, font_path, text_size=44, inline_max_bytes=54):
+def create_info_segment(clip_config, resolution, font_path, text_size=44, inline_max_len=52):
     print(f"正在合成视频片段: {clip_config['id']}")
     bg_image = ImageClip("./images/IntroBase.png").with_duration(clip_config['duration'])
     bg_image = bg_image.with_effects([vfx.Resize(width=resolution[0])])
@@ -129,7 +132,7 @@ def create_info_segment(clip_config, resolution, font_path, text_size=44, inline
                                       vfx.Resize(width=resolution[0])])
 
     # 创建文字
-    text_list = get_splited_text(clip_config['text'], text_max_bytes=inline_max_bytes)
+    text_list = get_splited_text(clip_config['text'], text_max_bytes=inline_max_len)
     txt_clip = TextClip(font=font_path, text="\n".join(text_list),
                         method = "label",
                         font_size=text_size,
@@ -168,7 +171,7 @@ def create_info_segment(clip_config, resolution, font_path, text_size=44, inline
     return composite_clip.with_duration(clip_config['duration'])
 
 
-def create_video_segment(clip_config, resolution, font_path, text_size=28, inline_max_bytes=68):
+def create_video_segment(clip_config, resolution, font_path, text_size=28, inline_max_len=68):
     print(f"正在合成视频片段: {clip_config['id']}")
     
     # 默认的底部背景
@@ -231,7 +234,7 @@ def create_video_segment(clip_config, resolution, font_path, text_size=28, inlin
     text_pos = (int(0.54 * resolution[0]), int(0.54 * resolution[1]))
 
     # 创建文字
-    text_list = get_splited_text(clip_config['text'], text_max_bytes=inline_max_bytes)
+    text_list = get_splited_text(clip_config['text'], text_max_bytes=inline_max_len)
     txt_clip = TextClip(font=font_path, text="\n".join(text_list),
                         method = "label",
                         # size=(text_max_width, text_max_height), 

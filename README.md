@@ -1,7 +1,28 @@
 # mai-gen-videob50
+
+自动从流媒体上搜索并构建你的舞萌DX B50视频
 Auto search and generate your best 50 videoes of MaimaiDX
 
-# 当前生成效果预览
+## 快速开始
+
+想要一键（几乎）自动地生成你的B50视频？参考你是否符合以下条件：
+
+- 你拥有一个[水鱼查分器](https://www.diving-fish.com/maimaidx/prober/)账号，并允许公开获取你的B50数据
+
+- 你的网络环境可以正常访问[Youtube](https://www.youtube.com/)
+
+> 由于目前的谱面确认视频获取方法为从Youtube上抓取，你可能需要开启网络代理🪜才可以正常使用，非常抱歉！（请放心生成器只抓取360p的预览视频，因此对网络速度和流量的要求很低）
+
+> 我们正在考虑后续开发抓取B站的可选项，敬请期待。
+
+- 你具有基本的计算机知识，可以按照说明（或GPT辅助）完成python脚本操作
+
+如果一切OK，请参考[使用说明](#使用说明)开始生成你的B50视频!
+
+我正在制作一个教程视频，稍后会贴在这里
+
+
+## 当前生成效果预览
 
 ![alt text](md_res/image.png)
 
@@ -13,6 +34,7 @@ Auto search and generate your best 50 videoes of MaimaiDX
 
     ```bash
     conda create -n mai-gen-videob50 python=3.10
+    conda activate mai-gen-videob50
     ```
 
 2. 从 requirements.txt 安装依赖
@@ -23,29 +45,7 @@ Auto search and generate your best 50 videoes of MaimaiDX
 
 3. 安装必要的工具软件：
 
-    请确保以下工具软件可以在你的系统命令行或终端中正常使用：
-
-- `ImageMagick` 用于图片的格式转换
-
-    - Windows:
-
-        在项目`dependencies`文件夹下找到 `ImageMagick-7.1.1-41-Q16-HDRI-x64-dll.exe` 安装包，双击以默认配置安装。正常情况下安装程序会自动将ImageMagick路径添加系统到环境变量中。
-    
-    - Linux:
-
-        使用以下命令安装ImageMagick：
-
-        ```bash
-        sudo apt-get install -y imagemagick
-        ```
-
-    使用以下命令检查ImageMagick是否安装成功：
-
-    ```bash
-    magick -version
-    ``` 
-
-- `ffmpeg` 用于视频的编码和解码
+    请确保`ffmpeg`（用于视频的编码和解码）可以在你的系统命令行或终端中正常使用：
 
     - Windows:
 
@@ -69,9 +69,39 @@ Auto search and generate your best 50 videoes of MaimaiDX
 python test.py
 ```
 
-如果程序输出以下内容，并在`./videos`文件夹下获得一个`test.mp4`的5秒钟视频文件，则说明系统功能正常。
+如果程序输出以下内容，并可以在`./videos/test`文件夹下获得一个`test_video.mp4`的17秒钟视频文件，则说明系统功能正常。
 
-### 配置相关参数
+```
+##### 开始系统功能测试...
+
+## [1/3]测试网络代理配置...
+当前代理设置:
+127.0.0.1:7890
+## [1/3]网络测试成功
+
+## [2/3]测试图片生成功能...
+未找到乐曲11663的难度4的max dx score信息。
+## [2/3]图片生成测试成功
+
+## [3/3]测试视频生成功能...
+正在合成视频片段: intro_1
+正在合成视频片段: NewBest_1
+正在合成视频片段: ending_1
+MoviePy - Building video videos/test/test_video.mp4.
+MoviePy - Writing audio in test_videoTEMP_MPY_wvf_snd.mp3
+MoviePy - Done.
+MoviePy - Writing video videos/test/test_video.mp4
+...
+MoviePy - video ready videos/test/test_video.mp4
+## [3/3]视频生成测试成功
+#####全部系统功能测试完成！
+```
+
+如果未能正常执行测试，请检查你的python环境和`ffmpeg`是否安装正确，确保其路径已添加到系统环境变量中。
+
+如无法自行确认问题，可将错误输出粘贴到issue中（在发issue前请先搜索是否已有相同问题）。
+
+### 相关参数配置
 
 在 `global_congfig.yaml` 文件中，配置以下信息：
 
@@ -108,7 +138,7 @@ python test.py
 
     > 如果网络连接异常，请检查`global_congfig.yaml`文件中`HTTP_PROXY`是否配置正确。
 
-    > 视网络情况，通常抓取完整的一份b50需要25-40分钟。如果在这一步骤期间遇到网络异常等问题导致程序中断，可以重新运行`pre_gen.py`文件，程序将会从上一次中断处继续执行。
+    > 视网络情况，通常抓取完整的一份b50视频素材需要30-60分钟。如果在这一步骤期间遇到网络异常等问题导致程序中断，可以重新运行`pre_gen.py`文件，程序将会从上一次中断处继续执行。
 
 2. 执行完毕后，请检查如下文件是否生成：
 
@@ -124,7 +154,7 @@ python test.py
 
         - 其中，"intro"和"ending"部分你填写的text会作为开头和结尾的文字展示。"main"部分填写的text为每条b50下的文字展示。
 
-        - 你输入的文字会根据模板长度自动换行，如果想要手动换行换行请使用`\n`，例如`aaa \n bbb`。请注意评论的长度，过长可能导致超出屏幕
+        - 你输入的文字会根据模板长度自动换行，如果想要手动换行换行请使用`\n`，例如`aaa\nbbb`。请注意评论的长度，过长可能导致超出屏幕
 
         - 如果在一页的"intro"和"ending"部分想要展示的文字太多写不下，可以复制配置文件内容，修改为不同的id，以生成多页的intro和ending，例如：
 
@@ -158,7 +188,7 @@ python test.py
 
         - 修改`start`/`end`的值可以调整每页的视频起止时间，如要修改，请同时修改对应的`duration`展示时长(单位为秒，"intro"和"ending"部分只需要配置`duration`即可)。
 
-    - 在`./videos/downloads/{USER_ID}`文件夹下，检查抓取视频的正确性，每个视频会按照`NewBest_x.mp4`或`PastBest_x.mp4`的格式命名,对应了相应b50的谱面确认。如果视频出现以下问题，请考虑手动修改或替换视频：
+    - 在`./videos/downloads/{USER_ID}`文件夹下，检查抓取视频的正确性，每个视频会按照`曲目id-难度阶级-类型（SD或DX）.mp4`的格式命名，请对照`video_config_{USER_ID}.json`文件确认与b50无误。如果视频出现以下问题，请考虑手动修改或替换视频：
 
         - 视频对应的谱面确认和实际不符
 
@@ -172,6 +202,10 @@ python test.py
     python main_gen.py
     ```
 
-    > 合并完整视频的时间取决于你设置的预览时长和设备的性能，在每个片段15s的情况下，生成完整大概需要30分钟。
+    > 合并完整视频的时间取决于你设置的预览时长和设备的性能，在每个片段15s的情况下，生成完整视频大概需要30-40分钟。
 
+## 鸣谢
 
+- [舞萌 DX 查分器](https://github.com/Diving-Fish/maimaidx-prober) 提供数据库及查询接口
+
+- [Tomsens Nanser](https://space.bilibili.com/255845314) 提供图片生成素材以及代码实现

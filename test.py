@@ -1,43 +1,179 @@
 import os
 from PIL import Image
-import numpy as np
-import shutil
-from moviepy import ImageClip, VideoFileClip, TextClip, CompositeVideoClip
+import yaml
+import requests
+import traceback
+from gene_images import generate_single_image
+from gene_video import create_info_segment, create_video_segment, add_clip_with_transition
+from moviepy import CompositeVideoClip
+from utils.video_crawler import download_video
+
+def test_network_proxy():
+    print("\n## [1/3]测试网络代理配置...")
+    try:
+        # read global config
+        with open("global_config.yaml", "r") as file:
+            config = yaml.safe_load(file)
+
+        use_proxy = config["USE_PROXY"]
+        http_proxy = config["HTTP_PROXY"]
+
+        if use_proxy:
+            print(f"当前代理设置:\n{http_proxy}")
+        else:
+            print("当前未使用代理，进行直连网络测试")
+
+        # 测试访问 youtube
+        youtube_url = "https://www.youtube.com"
+        if use_proxy:
+            response = requests.get(youtube_url, proxies={"http": http_proxy, "https": http_proxy})
+        else:
+            response = requests.get(youtube_url)
+
+        if response.status_code == 200:
+            print("## [1/3]网络测试成功")
+        else:
+            print(f"## [1/3]网络测试失败，状态码: {response.status_code}")
+
+        return True
+    except Exception as e:
+        print(f"测试网络代理时发生错误:")
+        traceback.print_exc()
+        return False
+
+def test_image_generation(test_image_config):
+    print("\n## [2/3]测试图片生成功能...")
+    try:
+        # 测试生成单张图片
+        generate_single_image(
+            background_path="./images/B50ViedoBase.png",
+            record_detail=test_image_config,
+            user_id="test",
+            prefix="PastBest",
+            index=0
+        )
+
+        # 检查图片是否可以正常打开和读取
+        img = Image.open(f"b50_images/test/PastBest_1.png")
+        img.verify()
+        print("## [2/3]图片生成测试成功")
+        return True
+    except Exception as e:
+        print(f"测试图片生成时发生错误: ")
+        traceback.print_exc()
+
+        return False
+
+def test_video_generation(test_video_config):
+    print("\n## [3/3]测试视频生成功能...")
+    try:
+        clips = []
+        intro_segment = create_info_segment(
+            clip_config=test_video_config["intro"][0],
+            resolution=(1920, 1080),
+            font_path="./font/SOURCEHANSANSSC-BOLD.OTF"
+        )
+        
+        video_segment = create_video_segment(
+            clip_config=test_video_config["main"][0],
+            resolution=(1920, 1080),
+            font_path="./font/SOURCEHANSANSSC-BOLD.OTF"
+        )
+
+        ending_segment = create_info_segment(
+            clip_config=test_video_config["ending"][0],
+            resolution=(1920, 1080),
+            font_path="./font/SOURCEHANSANSSC-BOLD.OTF"
+        )
+        
+        for clip in [intro_segment, video_segment, ending_segment]:
+            add_clip_with_transition(clips, clip, set_start=True, trans_time=1)
+        
+        final_video = CompositeVideoClip(clips)
+        final_video.write_videofile("videos/test/test_video.mp4", fps=30, threads=4, preset='ultrafast', codec="libx264")
+            
+        print("## [3/3]视频生成测试成功")
+        return True
+    except Exception as e:
+        print(f"测试视频生成时发生错误:")
+        traceback.print_exc()
+        return False
 
 def test_system():
-    print("开始系统功能测试...")
+    print("##### 开始系统功能测试...")
     
     # 测试文件夹创建
     if not os.path.exists("videos"):
         os.makedirs("videos")
+    if not os.path.exists("b50_images"):
+        os.makedirs("b50_images")
 
-    # 生成测试视频
-    try:
-        # 创建底部背景
-        bg_image = ImageClip("./images/VideoUnderBase.png").with_duration(5)
+    test_network_proxy()
 
-        # 创建文字
-        txt_clip = TextClip(font="./font/SOURCEHANSANSSC-BOLD.OTF", text="测试文字", font_size=24, color="white")
-        txt_clip = txt_clip.with_duration(5)
+    image_config = {
+        "achievements": 101.0000,
+        "ds": 15.0,
+        "dxScore": 5200,
+        "fc": "app",
+        "fs": "fdsp",
+        "level": "15",
+        "level_index": 4,
+        "level_label": "Re:MASTER",
+        "ra": 337,
+        "rate": "sssp",
+        "song_id": 11663,
+        "title": "系ぎて",
+        "type": "DX",
+    }
 
-        # 视频叠放顺序，从下往上：背景底图，谱面预览，图片（带有透明通道），文字
-        composite_clip = CompositeVideoClip([
-                bg_image.with_position((0, 0)),
-                txt_clip.with_position((0, 0))
-            ],
-            size=(1920, 1080)
-        )
+    if not os.path.exists("b50_images/test"):
+        os.makedirs("b50_images/test")
 
-        # 保存视频
-        composite_clip.write_videofile("videos/test.mp4", fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+    test_image_generation(test_image_config=image_config)
 
+    test_video_url = "https://www.youtube.com/watch?v=olmYHXHiLGg"
 
-    except Exception as e:
-        print(f"生成测试视频时发生错误: {str(e)}")
-        return False
+    test_video_config = {
+        "intro": [
+        {
+            "id": "intro_1",
+            "duration": 5,
+            "text": "要开始了呦~"
+        }
+        ],
+        "ending": [
+            {
+                "id": "ending_1",
+                "duration": 5,
+                "text": "期待下次与你相见~"
+            }
+        ],
+        "main": [
+            {
+                "id": "NewBest_1",
+                "achievement_title": "系ぎて-re:Master-DX",
+                "song_id": 11663,
+                "level_index": 4,
+                "type": "DX",
+                "main_image": "b50_images\\test\\PastBest_1.png",
+                "video": "videos\\test\\11663-4-DX.mp4",
+                "duration": 9,
+                "start": 49,
+                "end": 58,
+                "text": "音ゲー史上一番神聖なボス曲ってくらい綺麗"
+            },
+        ]
+    }
 
-    print("\n系统功能测试完成！")
-    return True
+    if not os.path.exists("videos/test"):
+        os.makedirs("videos/test")
+    
+    if not os.path.exists("videos/test/11663-4-DX.mp4"):
+        download_video(test_video_url, output_name="11663-4-DX", output_path="videos/test", high_res=False)
+
+    test_video_generation(test_video_config=test_video_config)
+
+    print("#####全部系统功能测试完成！")
 
 if __name__ == "__main__":
     test_system()

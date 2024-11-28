@@ -54,9 +54,8 @@ def start():
         except Exception as e:
             print(f"Error: 合成完整视频时发生异常: {e}")
 
-
 def video_generation_test():
-    username = "nickbit"
+    username = "c1ty"
 
     video_output_path = "./videos/test"
     if not os.path.exists(video_output_path):
@@ -80,16 +79,16 @@ def video_generation_test():
         'ending': ending_configs
     }
 
-    # for resource in intro_configs:
-    #     clip = create_info_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
-    #     # clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
-    #     clip.show()
+    for resource in intro_configs:
+        clip = create_info_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
+        # clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), fps=30, codec='h264_nvenc', threads=4, preset='fast', bitrate='5000k')
+        clip.show()
     
-    for resource in main_configs:
-        clip = create_video_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
-        clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), 
-                             fps=30, threads=4, preset='ultrafast', bitrate='5000k')
-        # clip.show()
+    # for resource in main_configs:
+    #     clip = create_video_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
+    #     clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), 
+    #                          fps=30, threads=4, preset='ultrafast', bitrate='5000k')
+    # clip.show()
     
     # for resource in ending_configs:
     #     clip = create_info_segment(resource, resolution=(1920, 1080), font_path=FONT_PATH)
