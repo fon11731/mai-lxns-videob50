@@ -144,7 +144,7 @@ MoviePy - video ready videos/test/test_video.mp4
 
     在`./b50_datas`文件夹下可以找到一个`video_config_{USER_ID}.json`文件
 
-    在`./b50_images/{USER_ID}`文件夹下可以找到所有生成的成绩图片。
+    在`./b50_images/{USER_ID}`文件夹下可以找到所有生成的成绩图片，以`{PastBest/NewBest}_{id}.png`的格式命名。
 
     在`./videos/downloads`文件夹下可以找到所有已下载的谱面确认视频，命名格式为`{song_id}-{level_index}-{type}.mp4`。其中，`song_id`为曲目的ID，`level_index`为难度，`type`为谱面类型，例如`834-4-SD.mp4`。
 
@@ -164,7 +164,7 @@ MoviePy - video ready videos/test/test_video.mp4
                 "id": "intro_1",
                 "duration": 10,
                 "text": "【前言部分第一页】"
-            }，
+            },
             {
                 "id": "intro_2",
                 "duration": 10,
@@ -184,7 +184,25 @@ MoviePy - video ready videos/test/test_video.mp4
             }
         ],
         ```
-        - "main"的部分暂不支持多页文字。
+        - "main"的部分暂不支持多页文字。"main"部分的填写示例如下：
+
+        ```json
+        "main": [
+            {
+                "id": "NewBest_1",
+                "achievement_title": "系ぎて-re:Master-DX",
+                "song_id": 11663,
+                "level_index": 4,
+                "type": "DX",
+                "main_image": "b50_images\\test\\PastBest_1.png",
+                "video": "videos\\test\\11663-4-DX.mp4",
+                "duration": 9,
+                "start": 49,
+                "end": 58,
+                "text": "【请填写b50评价】\n【你只需要填写这条字符串】"
+            },
+        ]
+        ```
 
         - 修改`start`/`end`的值可以调整每页的视频起止时间，如要修改，请同时修改对应的`duration`展示时长(单位为秒，"intro"和"ending"部分只需要配置`duration`即可)。
 
@@ -208,4 +226,4 @@ MoviePy - video ready videos/test/test_video.mp4
 
 - [舞萌 DX 查分器](https://github.com/Diving-Fish/maimaidx-prober) 提供数据库及查询接口
 
-- [Tomsens Nanser](https://space.bilibili.com/255845314) 提供图片生成素材以及代码实现
+- [Tomsens Nanser](https://space.bilibili.com/255845314) 提供图片生成素材模板以及代码实现
