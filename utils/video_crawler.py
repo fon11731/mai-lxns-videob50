@@ -3,11 +3,12 @@ from pytubefix import YouTube, Search
 import os
 import time
 import random
+import traceback
 import subprocess
 
 
 # 使用pytubefix下载视频
-def download_video(video_url, output_name, output_path, high_res=False):
+def download_video(video_url, output_name, output_path, proxy=None, high_res=False):
         """
         下载视频
         
@@ -22,14 +23,16 @@ def download_video(video_url, output_name, output_path, high_res=False):
             if not os.path.exists(output_path):
                 os.makedirs(output_path)
 
-            proxies = {
-                'http': 'http://127.0.0.1:7890',
-                'https': 'http://127.0.0.1:7890'
-            }
+            if proxy:
+                proxies = {
+                    'http': proxy,
+                    'https': proxy
+                }
 
-            yt = YouTube(video_url, proxies=proxies)
-            # for stream in yt.streams:
-            #     print(stream)
+                yt = YouTube(video_url, proxies=proxies)
+            else:
+                yt = YouTube(video_url) 
+
             print(f"正在下载: {yt.title}")
             if high_res:
                 # 分别下载视频和音频
@@ -54,98 +57,10 @@ def download_video(video_url, output_name, output_path, high_res=False):
             return output_file
             
         except Exception as e:
-            print(f"下载视频时发生错误: {str(e)}")
+            print(f"下载视频时发生错误:")
+            traceback.print_exc()
             return None
-
-# not use for now
-# class YouTubeDownloader:
-#     def __init__(self, api_key, proxy=None):
-#         """
-#         使用官方API进行搜索（需要API Key，每日限额100次，约能查找2次B50）
-#         使用pytubefix进行下载的youtube视频下载器
         
-#         Args:
-#             api_key (str): YouTube Data API key
-#         """
-#         self.API_NAME = "youtube"
-#         self.API_VERSION = "v3"
-#         self.api_key = api_key
-
-#         # 创建带代理的 HTTP 对象
-#         if proxy:
-#             try:
-#                 import httplib2
-#                 print(f"正在使用代理: {proxy}")
-#                 http = httplib2.Http(proxy_info=httplib2.ProxyInfo(
-#                     httplib2.socks.PROXY_TYPE_HTTP,
-#                     proxy.split(':')[0],
-#                     int(proxy.split(':')[1])
-#                 ))
-#                 # 测试代理连接
-#                 proxies = {
-#                     'http': 'http://127.0.0.1:7890',
-#                     'https': 'http://127.0.0.1:7890'
-#                 }
-#                 try:
-#                     response = requests.get('https://www.google.com', proxies=proxies)
-#                     print(f"代理测试状态码: {response.status_code}")
-#                 except Exception as e:
-#                     print(f"代理测试失败: {e}")
-#             except Exception as e:
-#                 print(f"代理设置失败: {str(e)}")
-#                 http = None
-#         else:
-#             http = None
-        
-#         try:
-#             print("正在创建 YouTube API 客户端...")
-#             self.youtube = build(
-#                 self.API_NAME, 
-#                 self.API_VERSION, 
-#                 developerKey=self.api_key,
-#                 http=http
-#             )
-#             print("YouTube API 客户端创建成功")
-#         except Exception as e:
-#             print(f"创建 YouTube API 客户端失败: {str(e)}")
-#             raise
-
-#     def search_video(self, keyword, max_results=1):
-#         """
-#         搜索视频
-        
-#         Args:
-#             keyword (str): 搜索关键词
-#             max_results (int): 返回结果数量
-            
-#         Returns:
-#             list: 视频信息列表
-#         """
-#         try:
-#             print(f"正在搜索视频: {keyword}")
-#             search_response = self.youtube.search().list(
-#                 q=keyword,
-#                 part="id,snippet",
-#                 maxResults=max_results,
-#                 type="video"
-#             ).execute()
-
-#             videos = []
-#             for search_result in search_response.get("items", []):
-#                 if search_result["id"]["kind"] == "youtube#video":
-#                     videos.append({
-#                         'id': search_result["id"]["videoId"],
-#                         'title': search_result["snippet"]["title"],
-#                         'url': f"https://www.youtube.com/watch?v={search_result['id']['videoId']}"
-#                     })
-#             return videos
-            
-#         except Exception as e:
-#             print(f"搜索视频时发生错误: {str(e)}")
-#             import traceback
-#             print("详细错误信息:")
-#             print(traceback.format_exc())
-#             return []
 
 class PurePytubefixDownloader:
     """
@@ -155,7 +70,14 @@ class PurePytubefixDownloader:
         self.proxy = proxy
     
     def search_video(self, keyword, max_results=None):
-        results = Search(keyword)
+        if self.proxy:
+            proxies = {
+                'http': self.proxy,
+                'https': self.proxy
+            }
+            results = Search(keyword, proxies=proxies)
+        else:
+            results = Search(keyword)
         videos = []
         for result in results.videos:
             # print(f'Title: {result.title}')
@@ -170,3 +92,7 @@ class PurePytubefixDownloader:
         if max_results:
             videos = videos[:max_results]
         return videos
+    
+    def download_video(self, video_url, output_name, output_path, high_res=False):
+        return download_video(video_url, output_name, output_path, self.proxy, high_res)
+

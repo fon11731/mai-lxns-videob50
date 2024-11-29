@@ -6,7 +6,7 @@ import traceback
 from gene_images import generate_single_image
 from gene_video import create_info_segment, create_video_segment, add_clip_with_transition
 from moviepy import CompositeVideoClip
-from utils.video_crawler import download_video
+from utils.video_crawler import PurePytubefixDownloader
 
 def test_network_proxy():
     print("\n## [1/3]测试网络代理配置...")
@@ -35,11 +35,11 @@ def test_network_proxy():
         else:
             print(f"## [1/3]网络测试失败，状态码: {response.status_code}")
 
-        return True
+        return use_proxy, http_proxy
     except Exception as e:
         print(f"测试网络代理时发生错误:")
         traceback.print_exc()
-        return False
+        return False, None
 
 def test_image_generation(test_image_config):
     print("\n## [2/3]测试图片生成功能...")
@@ -112,7 +112,7 @@ def test_system():
     if not os.path.exists("b50_images"):
         os.makedirs("b50_images")
 
-    test_network_proxy()
+    use_proxy, http_proxy = test_network_proxy()
 
     image_config = {
         "achievements": 101.0000,
@@ -173,7 +173,11 @@ def test_system():
         os.makedirs("videos/test")
     
     if not os.path.exists("videos/test/11663-4-DX.mp4"):
-        download_video(test_video_url, output_name="11663-4-DX", output_path="videos/test", high_res=False)
+        downloader = PurePytubefixDownloader(http_proxy if use_proxy else None)
+        downloader.download_video(test_video_url, 
+                                 "11663-4-DX", 
+                                 "videos/test", 
+                                 high_res=False)
 
     test_video_generation(test_video_config=test_video_config)
 
