@@ -1,7 +1,6 @@
 import json
 import os.path
 import requests
-
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -200,20 +199,25 @@ class Utils:
         return dx_stars
 
     def GenerateOneAchievement(self, record_detail: dict):
-        # 生成单个成绩
-        # 根据难度打开底板
-        # 根据水鱼返回字典调整 record_detail:
-        # title: 乐曲标题
-        # level: 等级整数
-        # ds：定数
-        # level -> level_index：难度颜色
-        # musicID -> song_id: 乐曲ID
-        # chattype -> type: 谱面类型
-        # achievement -> achievements: 达成率
-        # star -> dxScore：dx分数（TODO：计算dx星级）
-        # combostatus -> fc：FC状态（字符串，空或fc、fcp、ap、app）
-        # syncstatus -> sync：SYNC状态（字符串，空或fs、fsd、fsdp）
-        # rating -> ra：rating分数
+        """生成单个成绩记录。
+
+        Args:
+            record_detail (dict): 成绩记录详情，包含以下字段：
+                - title (str): 乐曲标题
+                - level (int): 等级整数
+                - ds (float): 定数
+                - level_index (int): 难度颜色
+                - song_id (str): 乐曲ID
+                - type (str): 谱面类型
+                - achievements (float): 达成率
+                - dxScore (int): DX分数
+                - fc (str): FC状态，可选值：空字符串、'fc'、'fcp'、'ap'、'app'
+                - sync (str): SYNC状态，可选值：空字符串、'fs'、'fsd'、'fsdp'
+                - ra (int): Rating分数
+
+        Returns:
+            Background (Image.Image): 处理后的成绩记录图片
+        """
         try:
             assert record_detail['level_index'] in range(0, 5)
             image_asset_path = os.path.join(os.getcwd(),

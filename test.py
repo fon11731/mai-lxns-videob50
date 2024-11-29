@@ -8,18 +8,12 @@ from gene_video import create_info_segment, create_video_segment, add_clip_with_
 from moviepy import CompositeVideoClip
 from utils.video_crawler import PurePytubefixDownloader
 
-def test_network_proxy():
-    print("\n## [1/3]测试网络代理配置...")
+
+def test_network_proxy(use_proxy, http_proxy):
+    print("\n## [1/4]测试网络代理配置...")
     try:
-        # read global config
-        with open("global_config.yaml", "r", encoding="utf-8") as file:
-            config = yaml.safe_load(file)
-
-        use_proxy = config["USE_PROXY"]
-        http_proxy = config["HTTP_PROXY"]
-
         if use_proxy:
-            print(f"当前代理设置:\n{http_proxy}")
+            print(f"当前代理设置: {http_proxy}")
         else:
             print("当前未使用代理，进行直连网络测试")
 
@@ -31,18 +25,15 @@ def test_network_proxy():
             response = requests.get(youtube_url)
 
         if response.status_code == 200:
-            print("## [1/3]网络测试成功")
+            print("## [1/4]网络测试成功")
         else:
-            print(f"## [1/3]网络测试失败，状态码: {response.status_code}")
-
-        return use_proxy, http_proxy
+            print(f"## [1/4]网络测试失败，状态码: {response.status_code}")
     except Exception as e:
         print(f"测试网络代理时发生错误:")
         traceback.print_exc()
-        return False, None
 
 def test_image_generation(test_image_config):
-    print("\n## [2/3]测试图片生成功能...")
+    print("\n## [2/4]测试图片生成功能...")
     try:
         # 测试生成单张图片
         generate_single_image(
@@ -56,7 +47,7 @@ def test_image_generation(test_image_config):
         # 检查图片是否可以正常打开和读取
         img = Image.open(f"b50_images/test/PastBest_1.png")
         img.verify()
-        print("## [2/3]图片生成测试成功")
+        print("## [2/4]图片生成测试成功")
         return True
     except Exception as e:
         print(f"测试图片生成时发生错误: ")
@@ -65,7 +56,7 @@ def test_image_generation(test_image_config):
         return False
 
 def test_video_generation(test_video_config):
-    print("\n## [3/3]测试视频生成功能...")
+    print("\n## [4/4]测试视频生成功能...")
     try:
         clips = []
         intro_segment = create_info_segment(
@@ -96,7 +87,7 @@ def test_video_generation(test_video_config):
         for clip in clips:
             clip.close()
             
-        print("## [3/3]视频生成测试成功")
+        print("## [4/4]视频生成测试成功")
         return True
     except Exception as e:
         print(f"测试视频生成时发生错误:")
@@ -112,7 +103,21 @@ def test_system():
     if not os.path.exists("b50_images"):
         os.makedirs("b50_images")
 
-    use_proxy, http_proxy = test_network_proxy()
+    # 读取全局配置
+    with open("global_config.yaml", "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file)
+
+    use_proxy = config["USE_PROXY"]
+    http_proxy = config["HTTP_PROXY"]
+
+    use_customer_potoken = config["USE_CUSTOM_PO_TOKEN"]
+    use_auto_potoken = config["USE_AUTO_PO_TOKEN"]
+    use_potoken = use_customer_potoken or use_auto_potoken
+    use_oauth = config["USE_OAUTH"]
+    
+    search_max_results = config["SEARCH_MAX_RESULTS"]
+ 
+    test_network_proxy(use_proxy, http_proxy)
 
     image_config = {
         "achievements": 101.0000,
@@ -135,8 +140,8 @@ def test_system():
 
     test_image_generation(test_image_config=image_config)
 
+    print("\n## [3/4]测试视频搜索和下载功能...")
     test_video_url = "https://www.youtube.com/watch?v=olmYHXHiLGg"
-
     test_video_config = {
         "intro": [
         {
@@ -172,16 +177,28 @@ def test_system():
     if not os.path.exists("videos/test"):
         os.makedirs("videos/test")
     
-    if not os.path.exists("videos/test/11663-4-DX.mp4"):
-        downloader = PurePytubefixDownloader(http_proxy if use_proxy else None)
-        downloader.download_video(test_video_url, 
-                                 "11663-4-DX", 
-                                 "videos/test", 
-                                 high_res=False)
+    if os.path.exists("videos/test/11663-4-DX.mp4"):
+        os.remove("videos/test/11663-4-DX.mp4")
+
+    downloader = PurePytubefixDownloader(
+        proxy=http_proxy if use_proxy else None,
+        use_potoken=use_potoken,
+        use_oauth=use_oauth,
+        auto_get_potoken=use_auto_potoken,
+        search_max_results=search_max_results
+    )
+    # test search
+    results = downloader.search_video("系ぎて")
+    for result in results:
+        print(f"测试搜索结果: {result}")
+
+    # test download
+    downloader.download_video(test_video_url, "11663-4-DX", "videos/test", high_res=False)
+    print("## [3/4]测试完毕")
 
     test_video_generation(test_video_config=test_video_config)
 
-    print("#####全部系统功能测试完成！")
+    print("##### 全部系统功能测试完成！")
 
 if __name__ == "__main__":
     test_system()

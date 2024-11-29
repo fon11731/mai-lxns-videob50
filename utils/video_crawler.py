@@ -1,38 +1,125 @@
 # from googleapiclient.discovery import build
 from pytubefix import YouTube, Search
+from typing import Tuple
 import os
+import yaml
+import json
 import time
 import random
 import traceback
 import subprocess
 
+def custom_po_token_verifier() -> Tuple[str, str]:
 
-# 使用pytubefix下载视频
-def download_video(video_url, output_name, output_path, proxy=None, high_res=False):
-        """
-        下载视频
+    with open("global_config.yaml", "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+    
+    if config['CUSTOMER_PO_TOKEN']['visitor_data'] == "" or config['CUSTOMER_PO_TOKEN']['po_token'] == "":
+        print("未配置CUSTOMER_PO_TOKEN，请检查global_config.yaml")
+
+    # print(f"/Customer PO Token/\n"
+    #       f"visitor_data: {config['CUSTOMER_PO_TOKEN']['visitor_data']}, \n"
+    #       f"po_token: {config['CUSTOMER_PO_TOKEN']['po_token']}")
+
+    return config["CUSTOMER_PO_TOKEN"]["visitor_data"], config["CUSTOMER_PO_TOKEN"]["po_token"]
         
-        Args:
-            video_url (str): 视频URL
-            output_path (str): 保存路径
-            
-        Returns:
-            str: 下载文件的路径，失败返回None
-        """
+def autogen_po_token_verifier() -> Tuple[str, str]:
+    # 自动生成 PO Token
+    script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "external_scripts", "po_token_generator.js")
+    result = subprocess.run(["node", script_path], capture_output=True, text=True)
+    
+    try:
+        cleaned_output = result.stdout.strip()  # 尝试清理输出中的空白字符
+        output = json.loads(cleaned_output)
+        # print(f"PO Token生成结果: {output}")
+    except json.JSONDecodeError as e:
+        print(f"验证PO Token生成失败 (JSON解析错误): {str(e)}")
+        print(f"原始输出内容: {repr(result.stdout)}")  # 使用repr()显示所有特殊字符
+        
+        if result.stderr:
+            print(f"外部脚本错误输出: {result.stderr}")
+        return None, None
+    
+    # 检查输出中是否含有特定键
+    if "visitorData" not in output or "poToken" not in output:
+        print("验证PO Token生成失败: 输出中不包含有效值")
+        print(f"原始输出内容: {repr(result.stdout)}")
+        return None, None
+    
+    # print(f"/Auto Generated PO Token/\n"
+    #       f"visitor_data: {output['visitor_data']}, \n"
+    #       f"po_token: {output['po_token']}")
+    
+    return output["visitorData"], output["poToken"]
+
+class PurePytubefixDownloader:
+    """
+    只使用pytubefix进行搜索和下载的youtube视频下载器
+    """
+    def __init__(self, proxy=None, use_oauth=False, use_potoken=False, auto_get_potoken=False, 
+                 search_max_results=3):
+        self.proxy = proxy
+        # use_oauth 和 use_potoken 互斥，优先使用use_potoken
+        self.use_potoken = use_potoken
+        if use_potoken:
+            self.use_oauth = False
+        else:
+            self.use_oauth = use_oauth
+        if auto_get_potoken:
+            self.po_token_verifier = autogen_po_token_verifier
+        else:
+            self.po_token_verifier = custom_po_token_verifier
+
+        self.search_max_results = search_max_results
+    
+    def search_video(self, keyword):
+        if self.proxy:
+            proxies = {
+                'http': self.proxy,
+                'https': self.proxy
+            }
+        else:
+            proxies = None
+
+        results = Search(keyword, 
+                         proxies=proxies, 
+                         use_oauth=self.use_oauth, 
+                         use_po_token=self.use_potoken,
+                         po_token_verifier=self.po_token_verifier)
+        videos = []
+        for result in results.videos:
+            # print(f'Title: {result.title}')
+            # print(f'URL: {result.watch_url}')
+            # print(f'Duration: {result.length} sec')
+            videos.append({
+                'id': result.video_id,
+                'title': result.title,
+                'url': result.watch_url,
+                'duration': result.length
+            })
+        if self.search_max_results < len(videos):
+            videos = videos[:self.search_max_results]
+        return videos
+    
+    def download_video(self, video_url, output_name, output_path, high_res=False):
         try:
             if not os.path.exists(output_path):
                 os.makedirs(output_path)
 
-            if proxy:
+            if self.proxy:
                 proxies = {
-                    'http': proxy,
-                    'https': proxy
+                    'http': self.proxy,
+                    'https': self.proxy
                 }
-
-                yt = YouTube(video_url, proxies=proxies)
             else:
-                yt = YouTube(video_url) 
+                proxies = None
 
+            yt = YouTube(video_url, 
+                         proxies=proxies, 
+                         use_oauth=self.use_oauth, 
+                         use_po_token=self.use_potoken,
+                         po_token_verifier=self.po_token_verifier)
+            
             print(f"正在下载: {yt.title}")
             if high_res:
                 # 分别下载视频和音频
@@ -60,39 +147,4 @@ def download_video(video_url, output_name, output_path, proxy=None, high_res=Fal
             print(f"下载视频时发生错误:")
             traceback.print_exc()
             return None
-        
-
-class PurePytubefixDownloader:
-    """
-    只使用pytubefix进行搜索和下载的youtube视频下载器
-    """
-    def __init__(self, proxy=None):
-        self.proxy = proxy
-    
-    def search_video(self, keyword, max_results=None):
-        if self.proxy:
-            proxies = {
-                'http': self.proxy,
-                'https': self.proxy
-            }
-            results = Search(keyword, proxies=proxies)
-        else:
-            results = Search(keyword)
-        videos = []
-        for result in results.videos:
-            # print(f'Title: {result.title}')
-            # print(f'URL: {result.watch_url}')
-            # print(f'Duration: {result.length} sec')
-            videos.append({
-                'id': result.video_id,
-                'title': result.title,
-                'url': result.watch_url,
-                'duration': result.length
-            })
-        if max_results:
-            videos = videos[:max_results]
-        return videos
-    
-    def download_video(self, video_url, output_name, output_path, high_res=False):
-        return download_video(video_url, output_name, output_path, self.proxy, high_res)
 

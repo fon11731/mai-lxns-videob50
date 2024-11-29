@@ -6,7 +6,7 @@ import yaml
 from update_music_data import fetch_music_data
 from gene_images import generate_b50_images
 from utils.Utils import get_b50_data_from_fish
-from utils.video_crawler import PurePytubefixDownloader, download_video
+from utils.video_crawler import PurePytubefixDownloader
 
 def update_b50_data(b50_raw_file, b50_data_file, username):
     try:
@@ -71,7 +71,7 @@ def update_b50_data(b50_raw_file, b50_data_file, username):
     return new_local_b50_data
 
 
-def search_b50_videos(downloader, b50_data, b50_data_file, search_max_results):
+def search_b50_videos(downloader, b50_data, b50_data_file, search_wait_time=(0,0)):
     i = 0
     for song in b50_data:
         i += 1
@@ -88,7 +88,7 @@ def search_b50_videos(downloader, b50_data, b50_data_file, search_max_results):
             keyword = f"{title_name} DX譜面 {difficulty_name} AP【maimaiでらっくす外部出力】"
 
         print(f"正在搜索视频({i}/50): {keyword}")
-        videos = downloader.search_video(keyword, max_results=search_max_results)
+        videos = downloader.search_video(keyword)
 
         if len(videos) == 0:
             print(f"Error: 没有找到{title_name}-{difficulty_name}-{type}的视频")
@@ -107,12 +107,13 @@ def search_b50_videos(downloader, b50_data, b50_data_file, search_max_results):
             json.dump(b50_data, f, ensure_ascii=False, indent=4)
         
         # 等待10-15秒，以减少被检测为bot的风险
-        time.sleep(random.randint(10, 15))
+        if search_wait_time[0] > 0 and search_wait_time[1] > search_wait_time[0]:
+            time.sleep(random.randint(search_wait_time[0], search_wait_time[1]))
     
     return b50_data
 
 
-def download_b50_videos(downloader, b50_data, video_download_path):
+def download_b50_videos(downloader, b50_data, video_download_path, download_wait_time=(0,0)):
     i = 0
     for song in b50_data:
         i += 1
@@ -136,7 +137,8 @@ def download_b50_videos(downloader, b50_data, video_download_path):
                                   high_res=False)
         
         # 等待5-10秒，以减少被检测为bot的风险
-        time.sleep(random.randint(5, 10))
+        if download_wait_time[0] > 0 and download_wait_time[1] > download_wait_time[0]:
+            time.sleep(random.randint(download_wait_time[0], download_wait_time[1]))
         print("\n")
 
 
@@ -232,7 +234,14 @@ def pre_gen():
     username = global_config["USER_ID"]
     use_proxy = global_config["USE_PROXY"]
     proxy = global_config["HTTP_PROXY"]
+
+    use_customer_potoken = global_config["USE_CUSTOM_PO_TOKEN"]
+    use_auto_potoken = global_config["USE_AUTO_PO_TOKEN"]
+    use_potoken = use_customer_potoken or use_auto_potoken
+    use_oauth = global_config["USE_OAUTH"]
+
     search_max_results = global_config["SEARCH_MAX_RESULTS"]
+    search_wait_time = tuple(global_config["SEARCH_WAIT_TIME"])
     use_all_cache = global_config["USE_ALL_CACHE"]
 
     # 创建缓存文件夹
@@ -250,44 +259,29 @@ def pre_gen():
     b50_data_file = f"./b50_datas/b50_config_{username}.json"
 
     # init downloader
-    if use_proxy:
-        downloader = PurePytubefixDownloader(proxy)
-    else:
-        downloader = PurePytubefixDownloader()
+    print(f"##### 【当前配置信息】##### \n"
+          f"  代理: {proxy if use_proxy else '未启用'}\n"
+          f"  使用potoken: {use_potoken}\n"
+          f"  使用oauth: {use_oauth}\n"
+          f"  自动获取potoken: {use_auto_potoken}")
+    downloader = PurePytubefixDownloader(
+        proxy=proxy if use_proxy else None,
+        use_potoken=use_potoken,
+        use_oauth=use_oauth,
+        auto_get_potoken=use_auto_potoken,
+        search_max_results=search_max_results
+    )
 
     if not use_all_cache:
         print("#####【1/4】获取用户的b50数据 #####")
         print(f"当前查询的水鱼用户名: {username}")
         b50_data = update_b50_data(b50_raw_file, b50_data_file, username)
 
-        print("#####【2/4】搜索b50视频信息 #####")
-        try:
-            b50_data = search_b50_videos(downloader, b50_data, b50_data_file, search_max_results)
-        except Exception as e:
-            print(f"Error: 搜索视频信息时发生异常: {e}")
-            return -1
-        
-        # 下载谱面确认视频
-        print("#####【3/4】下载谱面确认视频 #####")
-        video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
-        try:
-            download_b50_videos(downloader, b50_data, video_download_path)
-        except Exception as e:
-            print(f"Error: 下载视频时发生异常: {e}")
-            return -1
-        
-
         # 生成b50图片
-        print("#####【4/4】生成b50背景图片 #####")
+        print("#####【2/4】生成b50背景图片 #####")
         image_output_path = f"./b50_images/{username}"
         if not os.path.exists(image_output_path):
             os.makedirs(image_output_path)
-
-        # # check if image_output_path has png files
-        # if len(os.listdir(image_output_path)) != 0:
-        #     # delete all files in image_output_path
-        #     for file in os.listdir(image_output_path):
-        #         os.remove(os.path.join(image_output_path, file))
 
         b35_data = b50_data[:35]
         b15_data = b50_data[35:]
@@ -296,6 +290,23 @@ def pre_gen():
         except Exception as e:
             print(f"Error: 生成图片时发生异常: {e}")
             return 1
+
+        print("#####【3/4】搜索b50视频信息 #####")
+        try:
+            b50_data = search_b50_videos(downloader, b50_data, b50_data_file, search_wait_time)
+        except Exception as e:
+            print(f"Error: 搜索视频信息时发生异常: {e}")
+            return -1
+        
+        # 下载谱面确认视频
+        print("#####【4/4】下载谱面确认视频 #####")
+        video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
+        try:
+            download_b50_videos(downloader, b50_data, video_download_path, search_wait_time)
+        except Exception as e:
+            print(f"Error: 下载视频时发生异常: {e}")
+            return -1       
+        
     else:
         print(f"#####【已配置 USE_ALL_CACHE=true ，使用本地缓存数据直接生成配置文件】 #####")
         print(f"##### 当前配置的水鱼用户名: {username} #####")

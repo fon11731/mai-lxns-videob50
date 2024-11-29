@@ -1,3 +1,9 @@
+# ignore node_modules installed by npm
+node_modules/
+package-lock.json
+package.json
+
+# ignore template mp3 files
 /*.mp3
 
 # B50 cache directories

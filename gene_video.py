@@ -292,6 +292,7 @@ def add_clip_with_transition(clips, new_clip, set_start=False, trans_time=1):
     
     clips.append(new_clip)
 
+
 def create_full_video(resources, resolution, font_path, auto_add_transition=True, trans_time=1):
     clips = []
 

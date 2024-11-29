@@ -1,6 +1,7 @@
 # mai-gen-videob50
 
 自动从流媒体上搜索并构建你的舞萌DX B50视频
+
 Auto search and generate your best 50 videoes of MaimaiDX
 
 ## 快速开始
@@ -11,7 +12,7 @@ Auto search and generate your best 50 videoes of MaimaiDX
 
 - 你的网络环境可以正常访问[Youtube](https://www.youtube.com/)
 
-> 由于目前的谱面确认视频获取方法为从Youtube上抓取，你可能需要开启网络代理🪜才可以正常使用，非常抱歉！（请放心生成器只抓取360p的预览视频，因此对网络速度和流量的要求很低）
+> 由于目前的谱面确认视频获取方法为从Youtube上抓取，你可能需要开启网络代理🪜才可以正常使用，造成的不便敬请谅解（请放心生成器只抓取360p的预览视频，因此对网络速度和流量的要求很低）。
 
 > 我们正在考虑后续开发抓取B站的可选项，敬请期待。
 
@@ -30,7 +31,7 @@ Auto search and generate your best 50 videoes of MaimaiDX
 
 ### 环境安装和准备工作
 
-1. 推荐使用 `conda` 安装python环境和依赖
+1. 推荐使用 `conda` 安装python环境和依赖（可选）
 
     ```bash
     conda create -n mai-gen-videob50 python=3.10
@@ -74,46 +75,52 @@ python test.py
 ```
 ##### 开始系统功能测试...
 
-## [1/3]测试网络代理配置...
-当前代理设置:
-127.0.0.1:7890
-## [1/3]网络测试成功
+## [1/4]测试网络代理配置...
+当前代理设置: 127.0.0.1:7890
+## [1/4]网络测试成功
 
-## [2/3]测试图片生成功能...
-未找到乐曲11663的难度4的max dx score信息。
-## [2/3]图片生成测试成功
+## [2/4]测试图片生成功能...
+## [2/4]图片生成测试成功
 
-## [3/3]测试视频生成功能...
+## [3/4]测试视频搜索和下载功能...
+测试搜索结果: {'id': 'q26OmWO8ccg' ... 'duration': 174}
+正在下载: 【maimai外部出力(60fps)】系ぎて Re:MAS AP
+下载完成，存储为: 11663-4-DX.mp4
+## [3/4]测试完毕
+
+## [3/4]测试视频生成功能...
 正在合成视频片段: intro_1
 正在合成视频片段: NewBest_1
 正在合成视频片段: ending_1
-MoviePy - Building video videos/test/test_video.mp4.
-MoviePy - Writing audio in test_videoTEMP_MPY_wvf_snd.mp3
-MoviePy - Done.
-MoviePy - Writing video videos/test/test_video.mp4
+MoviePy - Building video videos/test/test_video.mp4 
 ...
+MoviePy - Done !
 MoviePy - video ready videos/test/test_video.mp4
-## [3/3]视频生成测试成功
-#####全部系统功能测试完成！
+## [4/4]视频生成测试成功
+##### 全部系统功能测试完成！
 ```
 
-如果未能正常执行测试，请检查你的python环境和`ffmpeg`是否安装正确，确保其路径已添加到系统环境变量中。
+如果未能正常执行测试，请对照[常见问题](#常见问题)一节检查。
 
-如无法自行确认问题，可将错误输出粘贴到issue中（在发issue前请先搜索是否已有相同问题）。
+如无法自行确认问题，可在[issue](https://github.com/teleaki/mai-gen-videob50/issues)中反馈，将错误输出粘贴帖子中（在发issue前请先搜索是否已有相同问题）。
 
 ### 相关参数配置
 
 在 `global_congfig.yaml` 文件中，配置以下信息：
 
+- `USER_ID` ：设置为你的水鱼用户ID。
+
 - `USE_PROXY` ：设置是否启用网络代理，如果设置为`true`，则启用代理，否则不启用。
 
 - `HTTP_PROXY` 如果开启网络代理，将其设置为你的代理地址（如果你使用clash等代理工具，请设置为`"127.0.0.1:7890"`）。
 
-- `USER_ID` ：设置为你的水鱼用户ID。
-
     > 为了能抓取到精确的成绩信息，请在[舞萌 DX | 中二节奏查分器](https://www.diving-fish.com/maimaidx/prober/)中点击“编辑个人资料”，并取消勾选“对非网页查询的成绩使用掩码”。
 
+- `USE_CUSTOM_PO_TOKEN, USE_AUTO_PO_TOKEN, USE_OAUTH, CUSTOMER_PO_TOKEN` ：设置抓取视频时的额外验证Token，一般情况下无需修改，特殊情况请参考文档[使用自定义OAuth或PO Token](UseTokenGuide.md)。
+
 - `SEARCH_MAX_RESULTS` ：设置为从youtube上搜索视频时，最多搜索到的视频数量。
+
+- `SEARCH_WAIT_TIME` ：设置从youtube上搜索视频时，每次搜索后等待的时间，格式为`[min, max]`，单位为秒。
 
 - `VIDEO_RES` ：设置输出视频的分辨率，格式为`(width, height)`。
 
@@ -128,9 +135,9 @@ MoviePy - video ready videos/test/test_video.mp4
 
 ### 完整B50视频生成操作流程
 
-0、配置好`global_congfig.yaml`文件，主要是配置代理以及填写`USER_ID`为你的水鱼用户名。
+0. 配置好`global_congfig.yaml`文件，主要是配置代理以及填写`USER_ID`为你的水鱼用户名。
 
-按照下面的步骤开始生成你的b50视频：
+    按照下面的步骤开始生成你的b50视频：
 
 1. 运行`pre_gen.py`文件，程序将会自动查询您的最新b50数据，并抓取相关谱面确认视频。
 
@@ -138,7 +145,7 @@ MoviePy - video ready videos/test/test_video.mp4
     python pre_gen.py
     ```
 
-    > 如果网络连接异常，请检查`global_congfig.yaml`文件中`HTTP_PROXY`是否配置正确。
+    > 如果网络连接异常，请检查`global_congfig.yaml`文件中`HTTP_PROXY`是否配置正确。持续出现异常请参考[常见问题](#视频抓取相关)一节。
 
     > 视网络情况，通常抓取完整的一份b50视频素材需要30-60分钟。如果在这一步骤期间遇到网络异常等问题导致程序中断，可以重新运行`pre_gen.py`文件，程序将会从上一次中断处继续执行。
 
@@ -223,6 +230,65 @@ MoviePy - video ready videos/test/test_video.mp4
     ```
 
     > 合并完整视频的时间取决于你设置的预览时长和设备的性能，在每个片段15s的情况下，生成完整视频大概需要30-40分钟。
+
+## 常见问题
+
+### 安装环境相关
+
+- 出现`ModuleNotFoundError: No module named 'moviepy'`等报错
+
+    请检查你是否已经配置好3.8版本以上的python环境，并安装了`requirements.txt`中的所有依赖。
+
+- 出现类似如下的报错：
+
+    ```
+    OSError: [WinError 2] The system cannot find the file specified
+
+    MoviePy error: the file 'ffmpeg.exe' was not found! Please install ffmpeg on your system, and make sure to set the path to the binary in the PATH environment variable
+    ```
+
+    请检查你的python环境和`ffmpeg`是否安装正确，确保其路径已添加到系统环境变量中。
+
+### 视频抓取相关
+
+- 网络链接问题，例如：
+
+    ```
+    [WinError 10060] 由于连接方在一段时间后没有正确答复或连接的主机没有反应，连接尝试失败。
+    ```
+
+    请检查网络连接。如果你使用代理，请检查是否在启用了`USE_PROXY`的情况下没有打开代理，或代理服务是否正常。
+
+- urlopen error或SSLEOFError异常：
+
+    ```
+    <urlopen error [Errno 2] No such file or directory>
+
+    ssl.SSLEOFError: EOF occurred in violation of protocol (_ssl.c:2423)
+    ```
+
+    请重启脚本，从断点处重新执行。
+
+- 搜索和下载视频期间出现如下错误：
+
+    ```
+    This request was detected as a bot. Use use_po_token=True to view. 
+    ```
+    说明你使用的ip地址可能被youtube识别为机器人导致封禁，最简单的办法是尝试更换代理ip后重试。
+
+    如果更改代理仍然无法解决问题，请尝试配置`PO_TOKEN`或`OAUTH_TOKEN`后抓取视频，这部分需要额外的环境配置和手动操作，请参考[使用自定义OAuth或PO Token](UseTokenGuide.md)。
+
+### 视频生成相关
+
+- 生成视频最后出现如下错误：
+
+    ```
+    if _WaitForSingleObject(self._handle, 0) == _WAIT_OBJECT_0:
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    OSError: [WinError 6] 句柄无效。
+    ```
+
+    这是因为ffmpeg没有正常关闭视频文件导致的，但该问题不影响最终视频生成，可以忽略。
 
 ## 鸣谢
 
