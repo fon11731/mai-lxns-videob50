@@ -71,12 +71,7 @@ def update_b50_data(b50_raw_file, b50_data_file, username):
     return new_local_b50_data
 
 
-def search_b50_videos(b50_data, b50_data_file, search_max_results, proxy=None):
-    if proxy:
-        downloader = PurePytubefixDownloader(proxy)
-    else:
-        downloader = PurePytubefixDownloader()
-
+def search_b50_videos(downloader, b50_data, b50_data_file, search_max_results):
     i = 0
     for song in b50_data:
         i += 1
@@ -117,7 +112,7 @@ def search_b50_videos(b50_data, b50_data_file, search_max_results, proxy=None):
     return b50_data
 
 
-def download_b50_videos(b50_data, video_download_path):
+def download_b50_videos(downloader, b50_data, video_download_path):
     i = 0
     for song in b50_data:
         i += 1
@@ -135,10 +130,10 @@ def download_b50_videos(b50_data, video_download_path):
             print(f"Error: 没有{song['title']}-{song['level_label']}-{song['type']}的视频信息，Skipping………")
             continue
         video_info = song['video_info_match']
-        download_video(video_info['url'], 
-                        output_name=clip_name, 
-                        output_path=video_download_path, 
-                        high_res=False)
+        downloader.download_video(video_info['url'], 
+                                  clip_name, 
+                                  video_download_path, 
+                                  high_res=False)
         
         # 等待5-10秒，以减少被检测为bot的风险
         time.sleep(random.randint(5, 10))
@@ -254,6 +249,12 @@ def pre_gen():
     b50_raw_file = f"./b50_datas/b50_raw_{username}.json"
     b50_data_file = f"./b50_datas/b50_config_{username}.json"
 
+    # init downloader
+    if use_proxy:
+        downloader = PurePytubefixDownloader(proxy)
+    else:
+        downloader = PurePytubefixDownloader()
+
     if not use_all_cache:
         print("#####【1/4】获取用户的b50数据 #####")
         print(f"当前查询的水鱼用户名: {username}")
@@ -261,10 +262,7 @@ def pre_gen():
 
         print("#####【2/4】搜索b50视频信息 #####")
         try:
-            if use_proxy:
-                b50_data = search_b50_videos(b50_data, b50_data_file, search_max_results, proxy)
-            else:
-                b50_data = search_b50_videos(b50_data, b50_data_file, search_max_results)
+            b50_data = search_b50_videos(downloader, b50_data, b50_data_file, search_max_results)
         except Exception as e:
             print(f"Error: 搜索视频信息时发生异常: {e}")
             return -1
@@ -273,7 +271,7 @@ def pre_gen():
         print("#####【3/4】下载谱面确认视频 #####")
         video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
         try:
-            download_b50_videos(b50_data, video_download_path)
+            download_b50_videos(downloader, b50_data, video_download_path)
         except Exception as e:
             print(f"Error: 下载视频时发生异常: {e}")
             return -1
