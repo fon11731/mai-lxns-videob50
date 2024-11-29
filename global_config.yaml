@@ -1,10 +1,36 @@
-# 代理设置
+## 【必填】水鱼查分器用户ID（请替换为你的用户名）
+USER_ID: teleaki
+
+## 代理设置
+
+# 是否使用代理
 USE_PROXY: true
-#（如果使用 clash，通常无需更改，请检查端口与你的设置是否一致）
+# 代理地址（如果使用 clash，通常无需更改，请检查端口与你的设置是否一致）
 HTTP_PROXY: "127.0.0.1:7890"
 
-# 水鱼查分器用户ID（请替换为你的用户名）
-USER_ID: ChocolateZ
+## Youtube 抓取相关配置
+
+# 是否使用自定义 PO Token 抓取视频（和自动获取 PO Token 互斥）
+USE_CUSTOM_PO_TOKEN: false
+
+# 配置自行抓取的 PO Token，包括两个部分，visitor_data 和 po_token
+CUSTOMER_PO_TOKEN:  
+  visitor_data: ""  
+  po_token: "" 
+
+# 是否自动获取 PO Token 抓取视频（请先阅读相关文档并确保已安装 Node.js 环境）
+USE_AUTO_PO_TOKEN: true
+
+# 是否使用 OAuth 登录抓取视频（注意：需要根据提示在浏览器中登录账号，可能存在风险，谨慎使用）
+USE_OAUTH: false
+
+# 搜索结果数量限制
+SEARCH_MAX_RESULTS: 3
+
+# 每次抓取结束后的等待时间（定义随机范围，秒）
+SEARCH_WAIT_TIME: [5, 10]
+
+## 视频输出配置
 
 # 视频分辨率设置 (宽度, 高度)
 VIDEO_RES: [1920, 1080]
@@ -14,9 +40,6 @@ VIDEO_TRANS_ENABLE: true
 
 # 视频片段之间的过渡时间（单位：秒）
 VIDEO_TRANS_TIME: 1.5
-
-# YouTube搜索结果数量限制
-SEARCH_MAX_RESULTS: 3
 
 # 是否使用已有缓存
 # 设置为true将使用全部本地已生成的图片和视频，并不再从互联网上获取数据
