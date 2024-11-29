@@ -12,7 +12,7 @@ def test_network_proxy():
     print("\n## [1/3]测试网络代理配置...")
     try:
         # read global config
-        with open("global_config.yaml", "r") as file:
+        with open("global_config.yaml", "r", encoding="utf-8") as file:
             config = yaml.safe_load(file)
 
         use_proxy = config["USE_PROXY"]
@@ -91,6 +91,10 @@ def test_video_generation(test_video_config):
         
         final_video = CompositeVideoClip(clips)
         final_video.write_videofile("videos/test/test_video.mp4", fps=30, threads=4, preset='ultrafast', codec="libx264")
+        
+        final_video.close()
+        for clip in clips:
+            clip.close()
             
         print("## [3/3]视频生成测试成功")
         return True

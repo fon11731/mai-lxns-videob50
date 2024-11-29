@@ -42,6 +42,7 @@ def start():
             clip = create_video_segment(resource, resolution=video_res, font_path=FONT_PATH)
             clip.write_videofile(os.path.join(video_output_path, f"{resource['id']}.mp4"), 
                                  fps=30, threads=4, preset='ultrafast', bitrate='5000k')
+            clip.close()
 
     else:
         print("[INFO] 合成完整视频，可能需要一段时间")
@@ -51,6 +52,7 @@ def start():
                                             trans_time=video_trans_time)
             final_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), 
                                         fps=30, threads=4, preset='ultrafast', bitrate='5000k')
+            final_video.close()
         except Exception as e:
             print(f"Error: 合成完整视频时发生异常: {e}")
 
