@@ -116,6 +116,7 @@ def test_system():
     use_oauth = config["USE_OAUTH"]
     
     search_max_results = config["SEARCH_MAX_RESULTS"]
+    download_high_res = config["DOWNLOAD_HIGH_RES"]
  
     test_network_proxy(use_proxy, http_proxy)
 
@@ -147,7 +148,7 @@ def test_system():
         {
             "id": "intro_1",
             "duration": 7,
-            "text": " 喜欢分享B50视频的小伙伴们，你们好~\n 我是说的道↓理↑ \n \n 听说国服最近更新了大的，\n 所以今天给大家带来点想看的东西啊~ \n \n \n 全是水分烂分请大家不要喷"
+            "text": " 要开始了呦~ "
         }
         ],
         "ending": [
@@ -166,34 +167,34 @@ def test_system():
                 "type": "DX",
                 "main_image": "b50_images\\test\\NewBest_1.png",
                 "video": "videos\\test\\11663-4-DX.mp4",
-                "duration": 20,
+                "duration": 10,
                 "start": 126,
-                "end": 146,
-                "text": " 全舞萌最简单15级DX谱 \n 两个舞神初见都鸟了 \n 外星人上分轮椅推荐 \n \n 神曲神谱感情调动"
+                "end": 136,
+                "text": " 音ゲー史上一番神聖なボス曲ってくらい綺麗 "
             },
         ]
     }
 
-    # if not os.path.exists("videos/test"):
-    #     os.makedirs("videos/test")
+    if not os.path.exists("videos/test"):
+        os.makedirs("videos/test")
     
-    # if os.path.exists("videos/test/11663-4-DX.mp4"):
-    #     os.remove("videos/test/11663-4-DX.mp4")
+    if os.path.exists("videos/test/11663-4-DX.mp4"):
+        os.remove("videos/test/11663-4-DX.mp4")
 
-    # downloader = PurePytubefixDownloader(
-    #     proxy=http_proxy if use_proxy else None,
-    #     use_potoken=use_potoken,
-    #     use_oauth=use_oauth,
-    #     auto_get_potoken=use_auto_potoken,
-    #     search_max_results=search_max_results
-    # )
-    # # test search
-    # results = downloader.search_video("系ぎて")
-    # for result in results:
-    #     print(f"测试搜索结果: {result}")
+    downloader = PurePytubefixDownloader(
+        proxy=http_proxy if use_proxy else None,
+        use_potoken=use_potoken,
+        use_oauth=use_oauth,
+        auto_get_potoken=use_auto_potoken,
+        search_max_results=search_max_results
+    )
+    # test search
+    results = downloader.search_video("系ぎて")
+    for result in results:
+        print(f"测试搜索结果: {result}")
 
-    # # test download
-    # downloader.download_video(test_video_url, "11663-4-DX", "videos/test", high_res=False)
+    # test download
+    downloader.download_video(test_video_url, "11663-4-DX", "videos/test", high_res=download_high_res)
     print("## [3/4]测试完毕")
 
     test_video_generation(test_video_config=test_video_config)

@@ -178,7 +178,7 @@ def download_b50_videos(downloader, b50_data, video_download_path, download_wait
         downloader.download_video(video_info['url'], 
                                   clip_name, 
                                   video_download_path, 
-                                  high_res=False)
+                                  high_res=download_high_res)
         
         # 等待5-10秒，以减少被检测为bot的风险
         if download_wait_time[0] > 0 and download_wait_time[1] > download_wait_time[0]:
@@ -186,7 +186,7 @@ def download_b50_videos(downloader, b50_data, video_download_path, download_wait
         print("\n")
 
 
-def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random_length=False):
+def gene_resource_config(b50_data, images_path, videoes_path, ouput_file):
 
     intro_clip_data = {
         "id": "intro_1",
@@ -341,8 +341,7 @@ def pre_gen():
     # 配置视频生成的配置文件
     config_output_file = f"./b50_datas/video_configs_{username}.json"
     try:
-        configs = gene_resource_config(b50_data, image_output_path, video_download_path, 
-                                   config_output_file, random_length=True)
+        configs = gene_resource_config(b50_data, image_output_path, video_download_path, config_output_file)
     except Exception as e:
         print(f"Error: 生成视频配置时发生异常: {e}")
         return 1
