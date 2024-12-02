@@ -3,6 +3,7 @@ import os
 import random
 import time
 import yaml
+import traceback
 from update_music_data import fetch_music_data
 from gene_images import generate_b50_images
 from utils.Utils import get_b50_data_from_fish
@@ -116,6 +117,7 @@ def update_b50_data(b50_raw_file, b50_data_file, username):
 
 
 def search_b50_videos(downloader, b50_data, b50_data_file, search_wait_time=(0,0)):
+    global search_max_results
     i = 0
     for song in b50_data:
         i += 1
@@ -158,6 +160,8 @@ def search_b50_videos(downloader, b50_data, b50_data_file, search_wait_time=(0,0
 
 
 def download_b50_videos(downloader, b50_data, video_download_path, download_wait_time=(0,0)):
+    global download_high_res
+
     i = 0
     for song in b50_data:
         i += 1
@@ -187,6 +191,7 @@ def download_b50_videos(downloader, b50_data, video_download_path, download_wait
 
 
 def gene_resource_config(b50_data, images_path, videoes_path, ouput_file):
+    global clip_start_interval, clip_play_time, default_comment_placeholders
 
     intro_clip_data = {
         "id": "intro_1",
@@ -207,8 +212,10 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file):
     }
 
     main_clips = []
-    if clip_start_interval[1] > clip_start_interval[0]:
-        clip_start_interval[1] = clip_start_interval[0]
+    
+    if clip_start_interval[0] > clip_start_interval[1]:
+        print(f"Error: 视频开始时间区间设置错误，请检查global_config.yaml文件中的CLIP_START_INTERVAL配置。")
+        clip_start_interval = (clip_start_interval[1], clip_start_interval[1])
 
     for song in b50_data:
         if not song['clip_id']:
@@ -269,6 +276,7 @@ def pre_gen():
         fetch_music_data()
     except Exception as e:
         print(f"Error: 获取乐曲更新数据时发生异常: {e}")
+        traceback.print_exc()
 
     # 创建缓存文件夹
     cache_pathes = [
@@ -322,6 +330,7 @@ def pre_gen():
             b50_data = search_b50_videos(downloader, b50_data, b50_data_file, search_wait_time)
         except Exception as e:
             print(f"Error: 搜索视频信息时发生异常: {e}")
+            traceback.print_exc()
             return -1
         
         # 下载谱面确认视频
@@ -331,6 +340,7 @@ def pre_gen():
             download_b50_videos(downloader, b50_data, video_download_path, search_wait_time)
         except Exception as e:
             print(f"Error: 下载视频时发生异常: {e}")
+            traceback.print_exc()
             return -1       
         
     else:
@@ -344,6 +354,7 @@ def pre_gen():
         configs = gene_resource_config(b50_data, image_output_path, video_download_path, config_output_file)
     except Exception as e:
         print(f"Error: 生成视频配置时发生异常: {e}")
+        traceback.print_exc()
         return 1
     # TODO：一个web前端可以改变配置和选择视频片段的长度
 
