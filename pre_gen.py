@@ -8,6 +8,50 @@ from gene_images import generate_b50_images
 from utils.Utils import get_b50_data_from_fish
 from utils.video_crawler import PurePytubefixDownloader
 
+# Global configuration variables
+global_config = {}
+username = ""
+use_proxy = False
+proxy = ""
+use_customer_potoken = False
+use_auto_potoken = False
+use_potoken = False
+use_oauth = False
+search_max_results = 0
+search_wait_time = (0, 0)
+use_all_cache = False
+download_high_res = False
+clip_play_time = 0
+clip_start_interval = (0, 0)
+full_last_clip = False
+default_comment_placeholders = True
+
+def load_global_config():
+    global global_config, username, use_proxy, proxy, use_customer_potoken, use_auto_potoken
+    global use_potoken, use_oauth, search_max_results, search_wait_time, use_all_cache
+    global download_high_res, clip_play_time, clip_start_interval, full_last_clip
+
+    # Read global_config.yaml file
+    with open("./global_config.yaml", "r", encoding="utf-8") as f:
+        global_config = yaml.load(f, Loader=yaml.FullLoader)
+
+    username = global_config["USER_ID"]
+    use_proxy = global_config["USE_PROXY"]
+    proxy = global_config["HTTP_PROXY"]
+    use_customer_potoken = global_config["USE_CUSTOM_PO_TOKEN"]
+    use_auto_potoken = global_config["USE_AUTO_PO_TOKEN"]
+    use_potoken = use_customer_potoken or use_auto_potoken
+    use_oauth = global_config["USE_OAUTH"]
+    search_max_results = global_config["SEARCH_MAX_RESULTS"]
+    search_wait_time = tuple(global_config["SEARCH_WAIT_TIME"])
+    use_all_cache = global_config["USE_ALL_CACHE"]
+    download_high_res = global_config["DOWNLOAD_HIGH_RES"]
+    clip_play_time = global_config["CLIP_PLAY_TIME"]
+    clip_start_interval = tuple(global_config["CLIP_START_INTERVAL"])
+    full_last_clip = global_config["FULL_LAST_CLIP"]
+    default_comment_placeholders = global_config["DEFAULT_COMMENT_PLACEHOLDERS"]
+
+
 def update_b50_data(b50_raw_file, b50_data_file, username):
     try:
         fish_data = get_b50_data_from_fish(username)
@@ -147,13 +191,13 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
     intro_clip_data = {
         "id": "intro_1",
         "duration": 10,
-        "text": "【请填写前言部分】"
+        "text": "【请填写前言部分】" if default_comment_placeholders else ""
     }
 
     ending_clip_data = {
         "id": "ending_1",
         "duration": 10,
-        "text": "【请填写后记部分】"
+        "text": "【请填写后记部分】" if default_comment_placeholders else ""
     }
 
     video_config_data = {
@@ -163,6 +207,8 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
     }
 
     main_clips = []
+    if clip_start_interval[1] > clip_start_interval[0]:
+        clip_start_interval[1] = clip_start_interval[0]
 
     for song in b50_data:
         if not song['clip_id']:
@@ -182,15 +228,9 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
             print(f"Error: 没有找到 {video_name}.mp4 视频，请检查本地缓存数据。")
             __video_path = ""
         
-        if random_length:
-            duration = random.randint(10, 12)
-            start = random.randint(15, 85)
-            end = start + duration
-        else:
-            # TODO:可配置
-            duration = 15
-            start = 10
-            end = 25
+        duration = clip_play_time
+        start = random.randint(clip_start_interval[0], clip_start_interval[1])
+        end = start + duration
 
         main_clip_data = {
             "id": id,
@@ -203,7 +243,7 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
             "duration": duration,
             "start": start,
             "end": end,
-            "text": "【请填写b50评价】"
+            "text": "【请填写b50评价】" if default_comment_placeholders else ""
         }
         main_clips.append(main_clip_data)
 
@@ -221,28 +261,14 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
 def pre_gen():
     print("#####【mai-genb50视频生成器 - Step1 信息预处理和素材获取】#####")
 
+    # Load global configuration
+    load_global_config()
+
     print("#####【尝试从水鱼获取乐曲更新数据】 #####")
     try:
         fetch_music_data()
     except Exception as e:
         print(f"Error: 获取乐曲更新数据时发生异常: {e}")
-
-    # read global_config.yaml file 
-    with open("./global_config.yaml", "r", encoding="utf-8") as f:
-        global_config = yaml.load(f, Loader=yaml.FullLoader)
-
-    username = global_config["USER_ID"]
-    use_proxy = global_config["USE_PROXY"]
-    proxy = global_config["HTTP_PROXY"]
-
-    use_customer_potoken = global_config["USE_CUSTOM_PO_TOKEN"]
-    use_auto_potoken = global_config["USE_AUTO_PO_TOKEN"]
-    use_potoken = use_customer_potoken or use_auto_potoken
-    use_oauth = global_config["USE_OAUTH"]
-
-    search_max_results = global_config["SEARCH_MAX_RESULTS"]
-    search_wait_time = tuple(global_config["SEARCH_WAIT_TIME"])
-    use_all_cache = global_config["USE_ALL_CACHE"]
 
     # 创建缓存文件夹
     cache_pathes = [

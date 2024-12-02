@@ -1,5 +1,5 @@
 ## 【必填】水鱼查分器用户ID（请替换为你的用户名）
-USER_ID: teleaki
+USER_ID: ditozu
 
 ## 代理设置
 
@@ -50,3 +50,24 @@ USE_ALL_CACHE: false
 # true: 只生成单独的视频片段
 # false: 生成完整的合并视频
 ONLY_GENERATE_CLIPS: false
+
+# 下载高分辨率视频（1080p）
+# 注意：高分辨率视频有较大的下载失败率与合并失败率，并会占用更多网络带宽和存储空间，谨慎使用！
+DOWNLOAD_HIGH_RES: false
+
+# 是否使用默认的提示词填充开头结尾以及b50评论
+# true: 默认生成，方便你在合成完整视频前，从配置文件中定位评论并修改
+# false: 默认不生成，使用空字符串，推荐在仅生成视频片段并用于二次创作时使用
+DEFAULT_COMMENT_PLACEHOLDERS: true
+
+# 合成完整视频时，每段谱面确认默认播放的时长（单位：秒）
+CLIP_PLAY_TIME: 10
+
+# 合成完整视频时，每段谱面确认默认开始播放的时间随机范围（单位：秒）
+# 填写相同的值将会使得随机失效
+# 注意，请不要与CLIP_PLAY_TIME均设置过大的值，否则可能导致部分视频长度不足
+# 建议范围在[15, 105]之间
+CLIP_START_INTERVAL: [15, 105]
+
+# 合成完整视频时，是否完整保留Best1的视频
+FULL_LAST_CLIP: false
