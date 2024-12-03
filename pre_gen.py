@@ -4,6 +4,8 @@ import random
 import time
 import yaml
 import traceback
+import threading
+from front_end.server import run_server, open_browser
 from update_music_data import fetch_music_data
 from gene_images import generate_b50_images
 from utils.Utils import get_b50_data_from_fish
@@ -206,6 +208,7 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file):
     }
 
     video_config_data = {
+        "enable_re_modify": False,
         "intro": [intro_clip_data],
         "ending": [ending_clip_data],
         "main": [],
@@ -250,7 +253,7 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file):
             "duration": duration,
             "start": start,
             "end": end,
-            "text": "【请填写b50评价】" if default_comment_placeholders else ""
+            "text": "【请填写b50评价】" if default_comment_placeholders else "",
         }
         main_clips.append(main_clip_data)
 
@@ -265,8 +268,22 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file):
     return video_config_data
 
 
+def start_editor_server(config_output_file, image_output_path, video_download_path, username):
+    # 确保 editor.html 在正确的位置
+    front_end_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'front_end')
+    editor_path = os.path.join(front_end_dir, 'editor.html')
+    
+    if not os.path.exists(editor_path):
+        print(f"Warning: editor.html not found at {editor_path}")
+        return False
+        
+    threading.Thread(target=open_browser).start()
+    # 传入指定的配置文件路径和资源路径
+    run_server(config_output_file, image_output_path, video_download_path, username)
+    return True
+
 def pre_gen():
-    print("#####【mai-genb50视频生成器 - Step1 信息预处理和素材获取】#####")
+    print("#####【Mai-genb50视频生成器 - Step1 信息预处理和素材获取】#####")
 
     # Load global configuration
     load_global_config()
@@ -306,14 +323,29 @@ def pre_gen():
         search_max_results=search_max_results
     )
 
-    if not use_all_cache:
-        print("#####【1/4】获取用户的b50数据 #####")
-        print(f"当前查询的水鱼用户名: {username}")
-        b50_data = update_b50_data(b50_raw_file, b50_data_file, username)
+    image_output_path = f"./b50_images/{username}"
+    video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
+    config_output_file = f"./b50_datas/video_configs_{username}.json"
 
+    # 检查用户是否已有完整的配置文件
+    if os.path.exists(config_output_file):
+        with open(config_output_file, "r", encoding="utf-8") as f:
+            configs = json.load(f)
+            if "enable_re_modify" in configs and configs["enable_re_modify"]:
+                print(f"#####【已检测到用户{username}已生成完毕的配置文件，跳过数据更新】 #####")
+                print(f"(注意：如果需要更新新的B50数据，请备份{config_output_file}中已填写的评论配置，然后删除该路径下的文件后重新运行程序）\n")
+                print(f"#####【请在新打开的页面中修改配置和评论，退出前不要忘记点击页面底部的保存】 #####")
+    
+                if not start_editor_server(config_output_file, image_output_path, video_download_path, username):
+                    return 1
+
+    print("#####【1/4】获取用户的b50数据 #####")
+    print(f"当前查询的水鱼用户名: {username}")
+    b50_data = update_b50_data(b50_raw_file, b50_data_file, username)
+
+    if not use_all_cache:
         # 生成b50图片
         print("#####【2/4】生成b50背景图片 #####")
-        image_output_path = f"./b50_images/{username}"
         if not os.path.exists(image_output_path):
             os.makedirs(image_output_path)
 
@@ -335,7 +367,6 @@ def pre_gen():
         
         # 下载谱面确认视频
         print("#####【4/4】下载谱面确认视频 #####")
-        video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
         try:
             download_b50_videos(downloader, b50_data, video_download_path, search_wait_time)
         except Exception as e:
@@ -344,21 +375,23 @@ def pre_gen():
             return -1       
         
     else:
-        print(f"#####【已配置 USE_ALL_CACHE=true ，使用本地缓存数据直接生成配置文件】 #####")
+        print(f"#####【已配置 USE_ALL_CACHE=true ，使用本地缓存数据生成配置文件】 #####")
         print(f"##### 当前配置的水鱼用户名: {username} #####")
         print(f"##### 如要求更新数据，请配置 USE_ALL_CACHE=false #####")
     
     # 配置视频生成的配置文件
-    config_output_file = f"./b50_datas/video_configs_{username}.json"
     try:
-        configs = gene_resource_config(b50_data, image_output_path, video_download_path, config_output_file)
+        gene_resource_config(b50_data, image_output_path, video_download_path, config_output_file)
     except Exception as e:
         print(f"Error: 生成视频配置时发生异常: {e}")
         traceback.print_exc()
         return 1
-    # TODO：一个web前端可以改变配置和选择视频片段的长度
 
-    print(f"#####【预处理完成, 请在{config_output_file}中检查生成的配置数据并填写评论】 #####")
+    print(f"#####【预处理完成, 请在新打开的页面中修改视频生成配置并填写评论，退出前不要忘记点击页面底部的保存】 #####")
+    
+    if not start_editor_server(config_output_file, image_output_path, video_download_path, username):
+        return 1
+
     return 0
 
 

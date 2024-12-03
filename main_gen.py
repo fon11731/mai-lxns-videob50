@@ -7,7 +7,7 @@ import traceback
 FONT_PATH = "./font/SOURCEHANSANSSC-BOLD.OTF"
 
 def start():
-    print("#####【mai-genb50视频生成器 - Step2 视频合成】#####")
+    print("#####【Mai-genb50视频生成器 - Step2 视频合成】#####")
     # read global_config.yaml file 
     with open("./global_config.yaml", "r", encoding="utf-8") as f:
         global_config = yaml.load(f, Loader=yaml.FullLoader)
