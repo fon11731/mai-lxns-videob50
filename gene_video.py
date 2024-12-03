@@ -171,7 +171,7 @@ def create_info_segment(clip_config, resolution, font_path, text_size=44, inline
     return composite_clip.with_duration(clip_config['duration'])
 
 
-def create_video_segment(clip_config, resolution, font_path, text_size=28, inline_max_len=68):
+def create_video_segment(clip_config, resolution, font_path, text_size=28, inline_max_len=48):
     print(f"正在合成视频片段: {clip_config['id']}")
     
     # 默认的底部背景
@@ -293,11 +293,12 @@ def add_clip_with_transition(clips, new_clip, set_start=False, trans_time=1):
     clips.append(new_clip)
 
 
-def create_full_video(resources, resolution, font_path, auto_add_transition=True, trans_time=1):
+def create_full_video(resources, resolution, font_path, auto_add_transition=True, trans_time=1, full_last_clip=False):
     clips = []
+    ending_clips = []
 
-    if auto_add_transition:
-        # 处理开场片段
+    # 处理开场片段
+    if 'intro' in resources:
         for clip_config in resources['intro']:
             clip = create_info_segment(clip_config, resolution, font_path)
             clip = normalize_audio_volume(clip)
@@ -305,26 +306,56 @@ def create_full_video(resources, resolution, font_path, auto_add_transition=True
                                     set_start=True, 
                                     trans_time=trans_time)
 
-        # 处理主要视频片段
-        for clip_config in resources['main']:
-            clip = create_video_segment(clip_config, resolution, font_path)
+    combined_start_time = 0
+    if not 'main' in resources:
+        print("Error: 没有找到主视频片段的合成！请检查配置文件！")
+        return
+    
+    # 处理主要视频片段
+    for clip_config in resources['main']:
+        # 判断是否是最后一个片段
+        if clip_config['id'] == resources['main'][-1]['id'] and full_last_clip:
+            start_time = clip_config['start']
+            # 获取原始视频的长度（不是配置文件中配置的duration）
+            full_clip_duration = VideoFileClip(clip_config['video']).duration - 5
+            # 修改配置文件中的duration，因此下面创建视频片段时，会使用加长版duration
+            clip_config['duration'] = full_clip_duration - start_time
+            clip_config['end'] = full_clip_duration
+
+            clip = create_video_segment(clip_config, resolution, font_path)  
+            clip = normalize_audio_volume(clip)
+
+            combined_start_time = clips[-1].end - trans_time
+            ending_clips.append(clip)     
+        else:
+            clip = create_video_segment(clip_config, resolution, font_path)  
             clip = normalize_audio_volume(clip)
 
             add_clip_with_transition(clips, clip, 
                                     set_start=True, 
                                     trans_time=trans_time)
 
-        # 处理结尾片段
+    # 处理结尾片段
+    if 'ending' in resources:
         for clip_config in resources['ending']:
             clip = create_info_segment(clip_config, resolution, font_path)
             clip = normalize_audio_volume(clip)
-            add_clip_with_transition(clips, clip, 
-                                    set_start=True, 
-                                    trans_time=trans_time)
+            if full_last_clip:
+                ending_clips.append(clip)
+            else:
+                add_clip_with_transition(clips, clip, 
+                                        set_start=True, 
+                                        trans_time=trans_time)
 
+    if full_last_clip and len(ending_clips) > 0:
+        clips.append(get_combined_ending_clip(ending_clips, combined_start_time, trans_time))
+
+    if auto_add_transition:
+        for clip in clips:
+            print(f"Video Generator: clip的开始时间：{clip.start}")
         return CompositeVideoClip(clips)
     else:
-        return concatenate_videoclips(clips)
+        return concatenate_videoclips(clips)  # 该方法不会添加转场效果，即使设置了trans_time
 
 
 def sort_video_files(files):
@@ -380,7 +411,7 @@ def combine_full_video_from_existing_clips(video_clip_path, resolution, trans_ti
         else:
             # 为前一个片段添加音频渐出效果
             clips[-1] = clips[-1].with_audio_fadeout(trans_time)
-            # 为当前片段添加音频渐入效果和视频渐入效果
+            # 为当前片段添加音频渐入效果和视频渐入效���
             current_clip = clip.with_audio_fadein(trans_time).with_crossfadein(trans_time)
             # 设置片段开始时间
             clips.append(current_clip.with_start(clips[-1].end - trans_time))
@@ -397,5 +428,66 @@ def gene_pure_black_video(duration, resolution):
     clip = ImageClip(black_frame).with_duration(duration)
     clip.write_videofile("./videos/black_bg.mp4", fps=30)
 
-if __name__ == "__main__":
-    gene_pure_black_video(5, (1920, 1080))
+
+def get_combined_ending_clip(ending_clips, combined_start_time, trans_time):
+    """合并B1片段与结尾，使用统一音频"""
+
+    if len(ending_clips) < 2:
+        print("Warning: 没有足够的结尾片段，将只保留B1片段")
+        return ending_clips[0].with_start(combined_start_time).with_effects([
+            vfx.CrossFadeIn(duration=trans_time),
+            afx.AudioFadeIn(duration=trans_time),
+            vfx.CrossFadeOut(duration=trans_time),
+            afx.AudioFadeOut(duration=trans_time)
+        ])
+    
+    # 获得b1片段
+    b1_clip = ending_clips[0]
+    # 获得结尾片段组
+    ending_comment_clips = ending_clips[1:]
+
+    # 取出b1片段的音频
+    combined_clip_audio = b1_clip.audio
+    b1_clip = b1_clip.without_audio()
+
+    # 计算需要从b1片段结尾截取的时间
+    ending_full_duration = sum([clip.duration for clip in ending_comment_clips])
+
+    if ending_full_duration > b1_clip.duration:
+        print(f"Warning: B1片段的长度不足，FULL_LAST_CLIP选项将无效化！")
+        return CompositeVideoClip(ending_clips).with_start(combined_start_time).with_effects([
+            vfx.CrossFadeIn(duration=trans_time),
+            afx.AudioFadeIn(duration=trans_time),
+            vfx.CrossFadeOut(duration=trans_time),
+            afx.AudioFadeOut(duration=trans_time)
+        ])
+
+    # 将ending_clip的时间提前到b1片段的结尾，并裁剪b1片段
+    b1_clip = b1_clip.subclipped(start_time=b1_clip.start, end_time=b1_clip.end - ending_full_duration)
+    # 裁剪ending_comment_clips
+    for i in range(len(ending_comment_clips)):
+        if i == 0:
+            ending_comment_clips[i] = ending_comment_clips[i].with_start(b1_clip.end)
+        else:
+            ending_comment_clips[i] = ending_comment_clips[i].with_start(ending_comment_clips[i-1].end)
+
+    full_list = [b1_clip] + ending_comment_clips
+    for clip in full_list:
+        print(f"Combined Ending Clip: clip的开始时间：{clip.start}, 结束时间：{clip.end}")
+
+    # 将b1片段与ending_clip合并
+    combined_clip = CompositeVideoClip(full_list)
+    print(f"Video Generator: b1_clip_audio_len: {combined_clip_audio.duration}, combined_clip_len: {combined_clip.duration}")
+    # 设置combined_clip的音频为原b1片段的音频（二者长度应该相同）
+    combined_clip = combined_clip.with_audio(combined_clip_audio)
+    # 设置combined_clip的开始时间
+    combined_clip = combined_clip.with_start(combined_start_time)
+    # 设置结尾淡出到黑屏
+    combined_clip = combined_clip.with_effects([
+        vfx.CrossFadeIn(duration=trans_time),
+        afx.AudioFadeIn(duration=trans_time),
+        vfx.CrossFadeOut(duration=trans_time),
+        afx.AudioFadeOut(duration=trans_time)
+    ])
+    
+    return combined_clip

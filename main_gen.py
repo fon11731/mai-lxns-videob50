@@ -2,6 +2,7 @@ from gene_video import create_video_segment, create_info_segment, create_full_vi
 import json
 import os
 import yaml
+import traceback
 
 FONT_PATH = "./font/SOURCEHANSANSSC-BOLD.OTF"
 
@@ -17,6 +18,7 @@ def start():
     video_trans_enable = global_config["VIDEO_TRANS_ENABLE"]
     video_trans_time = global_config["VIDEO_TRANS_TIME"]
     only_generate_clips = global_config["ONLY_GENERATE_CLIPS"]
+    full_last_clip = global_config["FULL_LAST_CLIP"]
 
     video_output_path = f"./videos/{username}"
     if not os.path.exists(video_output_path):
@@ -49,12 +51,15 @@ def start():
         try:
             final_video = create_full_video(configs, resolution=video_res, font_path=FONT_PATH, 
                                             auto_add_transition=video_trans_enable, 
-                                            trans_time=video_trans_time)
+                                            trans_time=video_trans_time, 
+                                            full_last_clip=full_last_clip)
+            # final_video.show(t=35)
             final_video.write_videofile(os.path.join(video_output_path, f"{username}_B50.mp4"), 
                                         fps=30, threads=4, preset='ultrafast', bitrate='5000k')
             final_video.close()
         except Exception as e:
             print(f"Error: 合成完整视频时发生异常: {e}")
+            traceback.print_exc()
 
 def video_generation_test():
     username = "c1ty"
