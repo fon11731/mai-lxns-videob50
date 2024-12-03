@@ -3,10 +3,57 @@ import os
 import random
 import time
 import yaml
+import traceback
+import threading
+from front_end.server import run_server, open_browser
 from update_music_data import fetch_music_data
 from gene_images import generate_b50_images
 from utils.Utils import get_b50_data_from_fish
 from utils.video_crawler import PurePytubefixDownloader
+
+# Global configuration variables
+global_config = {}
+username = ""
+use_proxy = False
+proxy = ""
+use_customer_potoken = False
+use_auto_potoken = False
+use_potoken = False
+use_oauth = False
+search_max_results = 0
+search_wait_time = (0, 0)
+use_all_cache = False
+download_high_res = False
+clip_play_time = 0
+clip_start_interval = (0, 0)
+full_last_clip = False
+default_comment_placeholders = True
+
+def load_global_config():
+    global global_config, username, use_proxy, proxy, use_customer_potoken, use_auto_potoken
+    global use_potoken, use_oauth, search_max_results, search_wait_time, use_all_cache
+    global download_high_res, clip_play_time, clip_start_interval, full_last_clip
+
+    # Read global_config.yaml file
+    with open("./global_config.yaml", "r", encoding="utf-8") as f:
+        global_config = yaml.load(f, Loader=yaml.FullLoader)
+
+    username = global_config["USER_ID"]
+    use_proxy = global_config["USE_PROXY"]
+    proxy = global_config["HTTP_PROXY"]
+    use_customer_potoken = global_config["USE_CUSTOM_PO_TOKEN"]
+    use_auto_potoken = global_config["USE_AUTO_PO_TOKEN"]
+    use_potoken = use_customer_potoken or use_auto_potoken
+    use_oauth = global_config["USE_OAUTH"]
+    search_max_results = global_config["SEARCH_MAX_RESULTS"]
+    search_wait_time = tuple(global_config["SEARCH_WAIT_TIME"])
+    use_all_cache = global_config["USE_ALL_CACHE"]
+    download_high_res = global_config["DOWNLOAD_HIGH_RES"]
+    clip_play_time = global_config["CLIP_PLAY_TIME"]
+    clip_start_interval = tuple(global_config["CLIP_START_INTERVAL"])
+    full_last_clip = global_config["FULL_LAST_CLIP"]
+    default_comment_placeholders = global_config["DEFAULT_COMMENT_PLACEHOLDERS"]
+
 
 def update_b50_data(b50_raw_file, b50_data_file, username):
     try:
@@ -72,6 +119,7 @@ def update_b50_data(b50_raw_file, b50_data_file, username):
 
 
 def search_b50_videos(downloader, b50_data, b50_data_file, search_wait_time=(0,0)):
+    global search_max_results
     i = 0
     for song in b50_data:
         i += 1
@@ -114,6 +162,8 @@ def search_b50_videos(downloader, b50_data, b50_data_file, search_wait_time=(0,0
 
 
 def download_b50_videos(downloader, b50_data, video_download_path, download_wait_time=(0,0)):
+    global download_high_res
+
     i = 0
     for song in b50_data:
         i += 1
@@ -134,7 +184,7 @@ def download_b50_videos(downloader, b50_data, video_download_path, download_wait
         downloader.download_video(video_info['url'], 
                                   clip_name, 
                                   video_download_path, 
-                                  high_res=False)
+                                  high_res=download_high_res)
         
         # 等待5-10秒，以减少被检测为bot的风险
         if download_wait_time[0] > 0 and download_wait_time[1] > download_wait_time[0]:
@@ -142,27 +192,33 @@ def download_b50_videos(downloader, b50_data, video_download_path, download_wait
         print("\n")
 
 
-def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random_length=False):
+def gene_resource_config(b50_data, images_path, videoes_path, ouput_file):
+    global clip_start_interval, clip_play_time, default_comment_placeholders
 
     intro_clip_data = {
         "id": "intro_1",
         "duration": 10,
-        "text": "【请填写前言部分】"
+        "text": "【请填写前言部分】" if default_comment_placeholders else ""
     }
 
     ending_clip_data = {
         "id": "ending_1",
         "duration": 10,
-        "text": "【请填写后记部分】"
+        "text": "【请填写后记部分】" if default_comment_placeholders else ""
     }
 
     video_config_data = {
+        "enable_re_modify": False,
         "intro": [intro_clip_data],
         "ending": [ending_clip_data],
         "main": [],
     }
 
     main_clips = []
+    
+    if clip_start_interval[0] > clip_start_interval[1]:
+        print(f"Error: 视频开始时间区间设置错误，请检查global_config.yaml文件中的CLIP_START_INTERVAL配置。")
+        clip_start_interval = (clip_start_interval[1], clip_start_interval[1])
 
     for song in b50_data:
         if not song['clip_id']:
@@ -182,15 +238,9 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
             print(f"Error: 没有找到 {video_name}.mp4 视频，请检查本地缓存数据。")
             __video_path = ""
         
-        if random_length:
-            duration = random.randint(10, 12)
-            start = random.randint(15, 85)
-            end = start + duration
-        else:
-            # TODO:可配置
-            duration = 15
-            start = 10
-            end = 25
+        duration = clip_play_time
+        start = random.randint(clip_start_interval[0], clip_start_interval[1])
+        end = start + duration
 
         main_clip_data = {
             "id": id,
@@ -203,7 +253,7 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
             "duration": duration,
             "start": start,
             "end": end,
-            "text": "【请填写b50评价】"
+            "text": "【请填写b50评价】" if default_comment_placeholders else "",
         }
         main_clips.append(main_clip_data)
 
@@ -218,31 +268,32 @@ def gene_resource_config(b50_data, images_path, videoes_path, ouput_file, random
     return video_config_data
 
 
+def start_editor_server(config_output_file, image_output_path, video_download_path, username):
+    # 确保 editor.html 在正确的位置
+    front_end_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'front_end')
+    editor_path = os.path.join(front_end_dir, 'editor.html')
+    
+    if not os.path.exists(editor_path):
+        print(f"Warning: editor.html not found at {editor_path}")
+        return False
+        
+    threading.Thread(target=open_browser).start()
+    # 传入指定的配置文件路径和资源路径
+    run_server(config_output_file, image_output_path, video_download_path, username)
+    return True
+
 def pre_gen():
-    print("#####【mai-genb50视频生成器 - Step1 信息预处理和素材获取】#####")
+    print("#####【Mai-genb50视频生成器 - Step1 信息预处理和素材获取】#####")
+
+    # Load global configuration
+    load_global_config()
 
     print("#####【尝试从水鱼获取乐曲更新数据】 #####")
     try:
         fetch_music_data()
     except Exception as e:
         print(f"Error: 获取乐曲更新数据时发生异常: {e}")
-
-    # read global_config.yaml file 
-    with open("./global_config.yaml", "r", encoding="utf-8") as f:
-        global_config = yaml.load(f, Loader=yaml.FullLoader)
-
-    username = global_config["USER_ID"]
-    use_proxy = global_config["USE_PROXY"]
-    proxy = global_config["HTTP_PROXY"]
-
-    use_customer_potoken = global_config["USE_CUSTOM_PO_TOKEN"]
-    use_auto_potoken = global_config["USE_AUTO_PO_TOKEN"]
-    use_potoken = use_customer_potoken or use_auto_potoken
-    use_oauth = global_config["USE_OAUTH"]
-
-    search_max_results = global_config["SEARCH_MAX_RESULTS"]
-    search_wait_time = tuple(global_config["SEARCH_WAIT_TIME"])
-    use_all_cache = global_config["USE_ALL_CACHE"]
+        traceback.print_exc()
 
     # 创建缓存文件夹
     cache_pathes = [
@@ -272,14 +323,29 @@ def pre_gen():
         search_max_results=search_max_results
     )
 
-    if not use_all_cache:
-        print("#####【1/4】获取用户的b50数据 #####")
-        print(f"当前查询的水鱼用户名: {username}")
-        b50_data = update_b50_data(b50_raw_file, b50_data_file, username)
+    image_output_path = f"./b50_images/{username}"
+    video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
+    config_output_file = f"./b50_datas/video_configs_{username}.json"
 
+    # 检查用户是否已有完整的配置文件
+    if os.path.exists(config_output_file):
+        with open(config_output_file, "r", encoding="utf-8") as f:
+            configs = json.load(f)
+            if "enable_re_modify" in configs and configs["enable_re_modify"]:
+                print(f"#####【已检测到用户{username}已生成完毕的配置文件，跳过数据更新】 #####")
+                print(f"(注意：如果需要更新新的B50数据，请备份{config_output_file}中已填写的评论配置，然后删除该路径下的文件后重新运行程序）\n")
+                print(f"#####【请在新打开的页面中修改配置和评论，退出前不要忘记点击页面底部的保存】 #####")
+    
+                if not start_editor_server(config_output_file, image_output_path, video_download_path, username):
+                    return 1
+
+    print("#####【1/4】获取用户的b50数据 #####")
+    print(f"当前查询的水鱼用户名: {username}")
+    b50_data = update_b50_data(b50_raw_file, b50_data_file, username)
+
+    if not use_all_cache:
         # 生成b50图片
         print("#####【2/4】生成b50背景图片 #####")
-        image_output_path = f"./b50_images/{username}"
         if not os.path.exists(image_output_path):
             os.makedirs(image_output_path)
 
@@ -296,33 +362,36 @@ def pre_gen():
             b50_data = search_b50_videos(downloader, b50_data, b50_data_file, search_wait_time)
         except Exception as e:
             print(f"Error: 搜索视频信息时发生异常: {e}")
+            traceback.print_exc()
             return -1
         
         # 下载谱面确认视频
         print("#####【4/4】下载谱面确认视频 #####")
-        video_download_path = f"./videos/downloads"  # 不同用户的视频缓存均存放在downloads文件夹下
         try:
             download_b50_videos(downloader, b50_data, video_download_path, search_wait_time)
         except Exception as e:
             print(f"Error: 下载视频时发生异常: {e}")
+            traceback.print_exc()
             return -1       
         
     else:
-        print(f"#####【已配置 USE_ALL_CACHE=true ，使用本地缓存数据直接生成配置文件】 #####")
+        print(f"#####【已配置 USE_ALL_CACHE=true ，使用本地缓存数据生成配置文件】 #####")
         print(f"##### 当前配置的水鱼用户名: {username} #####")
         print(f"##### 如要求更新数据，请配置 USE_ALL_CACHE=false #####")
     
     # 配置视频生成的配置文件
-    config_output_file = f"./b50_datas/video_configs_{username}.json"
     try:
-        configs = gene_resource_config(b50_data, image_output_path, video_download_path, 
-                                   config_output_file, random_length=True)
+        gene_resource_config(b50_data, image_output_path, video_download_path, config_output_file)
     except Exception as e:
         print(f"Error: 生成视频配置时发生异常: {e}")
+        traceback.print_exc()
         return 1
-    # TODO：一个web前端可以改变配置和选择视频片段的长度
 
-    print(f"#####【预处理完成, 请在{config_output_file}中检查生成的配置数据并填写评论】 #####")
+    print(f"#####【预处理完成, 请在新打开的页面中修改视频生成配置并填写评论，退出前不要忘记点击页面底部的保存】 #####")
+    
+    if not start_editor_server(config_output_file, image_output_path, video_download_path, username):
+        return 1
+
     return 0
 
 

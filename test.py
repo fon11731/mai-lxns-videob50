@@ -40,12 +40,12 @@ def test_image_generation(test_image_config):
             background_path="./images/B50ViedoBase.png",
             record_detail=test_image_config,
             user_id="test",
-            prefix="PastBest",
+            prefix="NewBest",
             index=0
         )
 
         # 检查图片是否可以正常打开和读取
-        img = Image.open(f"b50_images/test/PastBest_1.png")
+        img = Image.open(f"b50_images/test/NewBest_1.png")
         img.verify()
         print("## [2/4]图片生成测试成功")
         return True
@@ -116,13 +116,14 @@ def test_system():
     use_oauth = config["USE_OAUTH"]
     
     search_max_results = config["SEARCH_MAX_RESULTS"]
+    download_high_res = config["DOWNLOAD_HIGH_RES"]
  
     test_network_proxy(use_proxy, http_proxy)
 
     image_config = {
         "achievements": 101.0000,
         "ds": 15.0,
-        "dxScore": 5200,
+        "dxScore": 4200,
         "fc": "app",
         "fs": "fdsp",
         "level": "15",
@@ -146,8 +147,8 @@ def test_system():
         "intro": [
         {
             "id": "intro_1",
-            "duration": 5,
-            "text": "要开始了呦~"
+            "duration": 7,
+            "text": " 要开始了呦~ "
         }
         ],
         "ending": [
@@ -164,12 +165,12 @@ def test_system():
                 "song_id": 11663,
                 "level_index": 4,
                 "type": "DX",
-                "main_image": "b50_images\\test\\PastBest_1.png",
+                "main_image": "b50_images\\test\\NewBest_1.png",
                 "video": "videos\\test\\11663-4-DX.mp4",
-                "duration": 9,
-                "start": 49,
-                "end": 58,
-                "text": "音ゲー史上一番神聖なボス曲ってくらい綺麗"
+                "duration": 10,
+                "start": 126,
+                "end": 136,
+                "text": " 音ゲー史上一番神聖なボス曲ってくらい綺麗 "
             },
         ]
     }
@@ -193,7 +194,7 @@ def test_system():
         print(f"测试搜索结果: {result}")
 
     # test download
-    downloader.download_video(test_video_url, "11663-4-DX", "videos/test", high_res=False)
+    downloader.download_video(test_video_url, "11663-4-DX", "videos/test", high_res=download_high_res)
     print("## [3/4]测试完毕")
 
     test_video_generation(test_video_config=test_video_config)

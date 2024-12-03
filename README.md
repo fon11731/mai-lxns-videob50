@@ -149,81 +149,97 @@ MoviePy - video ready videos/test/test_video.mp4
 
     > 视网络情况，通常抓取完整的一份b50视频素材需要30-60分钟。如果在这一步骤期间遇到网络异常等问题导致程序中断，可以重新运行`pre_gen.py`文件，程序将会从上一次中断处继续执行。
 
-2. 执行完毕后，请检查如下文件是否生成：
+2. 执行完毕后，将会弹出类似下图的浏览器页面：
 
-    在`./b50_datas`文件夹下可以找到一个`video_config_{USER_ID}.json`文件
+    ![alt text](md_res/web_config.png)
 
-    在`./b50_images/{USER_ID}`文件夹下可以找到所有生成的成绩图片，以`{PastBest/NewBest}_{id}.png`的格式命名。
+    其中你可以预览已经生成的图片和抓取到的谱面预览视频。
 
-    在`./videos/downloads`文件夹下可以找到所有已下载的谱面确认视频，命名格式为`{song_id}-{level_index}-{type}.mp4`。其中，`song_id`为曲目的ID，`level_index`为难度，`type`为谱面类型，例如`834-4-SD.mp4`。
+    你需要填写：
+    
+    - 所有的评论文本框（请注意评论的长度，可换行，总长度在200字以内，过长可能导致超出屏幕）
 
-    下面你需要手动进行如下操作（**我们正在考虑设计前端页面以优化这部分流程**）：
+    - 每条视频的开始时间和持续时间（在生成时已为你随机一个片段，你可以手动调整）
 
-    - 打开`video_config_{USER_ID}.json`文件，在每条数据的`text`字段中填写你要展示的评论。
+    **填写完毕后请务必点击页面底部的保存按钮！**
 
-        - 其中，"intro"和"ending"部分你填写的text会作为开头和结尾的文字展示。"main"部分填写的text为每条b50下的文字展示。
+    > 你还可以手动请检查如下文件是否生成：
 
-        - 你输入的文字会根据模板长度自动换行，如果想要手动换行换行请使用`\n`，例如`aaa\nbbb`。请注意评论的长度，过长可能导致超出屏幕
+    > - 在`./b50_datas`文件夹下可以找到一个`video_config_{USER_ID}.json`文件
 
-        - 如果在一页的"intro"和"ending"部分想要展示的文字太多写不下，可以复制配置文件内容，修改为不同的id，以生成多页的intro和ending，例如：
+    > - 在`./b50_images/{USER_ID}`文件夹下可以找到所有生成的成绩图片，以`{PastBest/NewBest}_{id}.png`的格式命名。
 
-        ```json
-        "intro": [
-            {
-                "id": "intro_1",
-                "duration": 10,
-                "text": "【前言部分第一页】"
-            },
-            {
-                "id": "intro_2",
-                "duration": 10,
-                "text": "【前言部分第二页】"
-            }
-        ],
-        "ending": [
-            {
-                "id": "ending_1",
-                "duration": 10,
-                "text": "【后记部分第一页】"
-            },
-            {
-                "id": "ending_2",
-                "duration": 10,
-                "text": "【后记部分第二页】"
-            }
-        ],
-        ```
-        - "main"的部分暂不支持多页文字。"main"部分的填写示例如下：
+    > - 在`./videos/downloads`文件夹下可以找到所有已下载的谱面确认视频，命名格式为`{song_id}-{level_index}-{type}.mp4`。其中，`song_id`为曲目的ID，`level_index`为难度，`type`为谱面类型，例如`834-4-SD.mp4`。
 
-        ```json
-        "main": [
-            {
-                "id": "NewBest_1",
-                "achievement_title": "系ぎて-re:Master-DX",
-                "song_id": 11663,
-                "level_index": 4,
-                "type": "DX",
-                "main_image": "b50_images\\test\\PastBest_1.png",
-                "video": "videos\\test\\11663-4-DX.mp4",
-                "duration": 9,
-                "start": 49,
-                "end": 58,
-                "text": "【请填写b50评价】\n【你只需要填写这条字符串】"
-            },
-        ]
-        ```
+    如果你好奇的话，下面是配置文件的详细格式解释：
 
-        - 修改`start`/`end`的值可以调整每页的视频起止时间，如要修改，请同时修改对应的`duration`展示时长(单位为秒，"intro"和"ending"部分只需要配置`duration`即可)。
+    > - "intro"和"ending"部分你填写的text会作为开头和结尾的文字展示。"main"部分填写的text为每条b50下的文字展示。
 
-    - 在`./videos/downloads/{USER_ID}`文件夹下，检查抓取视频的正确性，每个视频会按照`曲目id-难度阶级-类型（SD或DX）.mp4`的格式命名，请对照`video_config_{USER_ID}.json`文件确认与b50无误。如果视频出现以下问题，请考虑手动修改或替换视频：
+    > - 你输入的文字会根据模板长度自动换行，如果想要手动换行换行请使用`\n`，例如`aaa\nbbb`。
 
-        - 视频对应的谱面确认和实际不符
+    > - 如果在一页的"intro"和"ending"部分想要展示的文字太多写不下，可以复制配置文件内容，修改为不同的id，以生成多页的intro和ending，例如：
 
-        - 视频中谱面确认的画面没有位于视频的正中央（部分早期谱面可能出现此问题，因为往往只能抓取到到带有手元的视频），请考虑手动编辑视频将外录的谱面确认部分移动至视频中央，并**保持视频的分辨率和比例均不变**（可以两边用黑色填充）。
+    ```json
+    "intro": [
+        {
+            "id": "intro_1",
+            "duration": 10,
+            "text": "【前言部分第一页】"
+        },
+        {
+            "id": "intro_2",
+            "duration": 10,
+            "text": "【前言部分第二页】"
+        }
+    ],
+    "ending": [
+        {
+            "id": "ending_1",
+            "duration": 10,
+            "text": "【后记部分第一页】"
+        },
+        {
+            "id": "ending_2",
+            "duration": 10,
+            "text": "【后记部分第二页】"
+        }
+    ],
+    ```
+    - "main"的部分暂不支持多页文字。"main"部分的示例如下：
 
+    ```json
+    "main": [
+        {
+            "id": "NewBest_1",
+            "achievement_title": "系ぎて-re:Master-DX",
+            "song_id": 11663,
+            "level_index": 4,
+            "type": "DX",
+            "main_image": "b50_images\\test\\PastBest_1.png",
+            "video": "videos\\test\\11663-4-DX.mp4",
+            "duration": 9,
+            "start": 49,
+            "end": 58,
+            "text": "【请填写b50评价】\n【你只需要填写这条字符串】"
+        },
+    ]
+    ```
+    
+    如果你在配置编辑页面浏览谱面预览视频的时候发现如下问题：
+
+    - 视频对应的谱面确认和实际不符
+
+    - 视频中谱面确认的画面没有位于视频的正中央（部分早期谱面可能出现此问题，因为往往只能抓取到到带有手元的视频）
+    
+    请考虑进行替换视频，你可以找到视频源文件，手动剪辑将外录的谱面确认部分移动至视频中央。请**保持视频的分辨率和比例均不变**（可以两边用黑色填充）。也可以直接去寻找其他谱面确认视频替换。
+
+    - 如何找到下载视频的源文件位置：
+
+        - 在`./videos/downloads/{USER_ID}`文件夹下缓存了所有下载的视频，每个视频会按照`曲目id-难度阶级-类型（SD或DX）.mp4`的格式命名，可以对照`video_config_{USER_ID}.json`文件里的`video`字段检查。
+    
         - 替换视频时，请保证视频的文件名不变。
 
-3. 检查完毕无误后，请运行`main_gen.py`文件，程序将会生成完整的视频（或每组视频片段）。
+3. 检查完毕无误后，你可以关闭浏览器和之前运行程序的终端窗口。然后重新启动一个终端窗口运行`main_gen.py`文件，程序将会依照已编辑的配置生成完整的视频（或每组视频片段）。
 
     ```bash
     python main_gen.py
