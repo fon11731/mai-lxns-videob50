@@ -45,11 +45,18 @@
    ```
 
 2. 执行以下命令：
+
    ```
    npm install global-agent youtube-po-token-generator
    ```
 
-3. 如果安装正确，你可以在项目根目录中看到`node_modules`文件夹以及`package.json`文件。`package.json`文件内容如下：
+3. 如果卡住或失败，请尝试先运行如下命令更换源：
+
+   ```
+   npm config set registry https://registry.npmmirror.com
+   ```
+
+4. 如果安装正确，你可以在项目根目录中看到`node_modules`文件夹以及`package.json`文件。`package.json`文件内容如下：
    ```
    {
       "dependencies": {
@@ -59,7 +66,7 @@
    }
    ```
 
-4、配置生成器脚本：打开`external_scripts/po_token_generator.js`文件，你只需要确认其中的代理配置一行（确保端口号正确）：
+5、配置生成器脚本：打开`external_scripts/po_token_generator.js`文件，你只需要确认其中的代理配置一行（确保端口号正确）：
    ```javascript
    global.GLOBAL_AGENT.HTTP_PROXY = 'http://127.0.0.1:7890'
    ```
