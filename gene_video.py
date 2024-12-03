@@ -351,8 +351,6 @@ def create_full_video(resources, resolution, font_path, auto_add_transition=True
         clips.append(get_combined_ending_clip(ending_clips, combined_start_time, trans_time))
 
     if auto_add_transition:
-        for clip in clips:
-            print(f"Video Generator: clip的开始时间：{clip.start}")
         return CompositeVideoClip(clips)
     else:
         return concatenate_videoclips(clips)  # 该方法不会添加转场效果，即使设置了trans_time
@@ -472,8 +470,8 @@ def get_combined_ending_clip(ending_clips, combined_start_time, trans_time):
             ending_comment_clips[i] = ending_comment_clips[i].with_start(ending_comment_clips[i-1].end)
 
     full_list = [b1_clip] + ending_comment_clips
-    for clip in full_list:
-        print(f"Combined Ending Clip: clip的开始时间：{clip.start}, 结束时间：{clip.end}")
+    # for clip in full_list:
+    #     print(f"Combined Ending Clip: clip的开始时间：{clip.start}, 结束时间：{clip.end}")
 
     # 将b1片段与ending_clip合并
     combined_clip = CompositeVideoClip(full_list)
