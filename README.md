@@ -1,6 +1,6 @@
 # mai-gen-videob50
 
-自动从流媒体上搜索并构建你的舞萌DX B50视频
+自动从流媒体上搜索并构建你的舞萌DX B50视频对于落雪咖啡屋的
 
 Auto search and generate your best 50 videoes of MaimaiDX
 
@@ -8,7 +8,7 @@ Auto search and generate your best 50 videoes of MaimaiDX
 
 想要一键（几乎）自动地生成你的B50视频？参考你是否符合以下条件：
 
-- 你拥有一个[水鱼查分器](https://www.diving-fish.com/maimaidx/prober/)账号，并允许公开获取你的B50数据
+- 你拥有一个[水鱼查分器](https://www.diving-fish.com/maimaidx/prober/)账号 （可选[落雪咖啡屋](https://maimai.lxns.net/)），并允许公开获取你的B50数据
 
 - 你的网络环境可以正常访问[Youtube](https://www.youtube.com/)
 
@@ -106,7 +106,7 @@ MoviePy - video ready videos/test/test_video.mp4
 如无法自行确认问题，可在[issue](https://github.com/teleaki/mai-gen-videob50/issues)中反馈，将错误输出粘贴帖子中（在发issue前请先搜索是否已有相同问题）。
 
 ### 相关参数配置
-
+#### 水鱼用户
 在 `global_congfig.yaml` 文件中，配置以下信息：
 
 - `USER_ID` ：设置为你的水鱼用户ID。
@@ -133,6 +133,32 @@ MoviePy - video ready videos/test/test_video.mp4
 
 - `ONLY_GENERATE_CLIPS` ：设置为是否只生成视频片段，如果设置为`true`，则只会在`./videos/{USER_ID}`文件夹下生成每个b的视频片段，而不会生成完整的视频。
 
+#### 落雪用户（未完成）
+在 `global_congfig.yaml` 文件中，配置以下信息：
+
+- `USER_ID` ：设置为你的落雪用户ID。
+
+- `USE_PROXY` ：设置是否启用网络代理，如果设置为`true`，则启用代理，否则不启用。
+
+- `HTTP_PROXY` 如果开启网络代理，将其设置为你的代理地址（如果你使用clash等代理工具，请设置为`"127.0.0.1:7890"`）。
+
+    > 为了能抓取到精确的成绩信息，请在[舞萌 DX | 中二节奏查分器](https://www.diving-fish.com/maimaidx/prober/)中点击“编辑个人资料”，并取消勾选“对非网页查询的成绩使用掩码”。
+
+- `USE_CUSTOM_PO_TOKEN, USE_AUTO_PO_TOKEN, USE_OAUTH, CUSTOMER_PO_TOKEN` ：设置抓取视频时的额外验证Token，一般情况下无需修改，特殊情况请参考文档[使用自定义OAuth或PO Token](UseTokenGuide.md)。
+
+- `SEARCH_MAX_RESULTS` ：设置为从youtube上搜索视频时，最多搜索到的视频数量。
+
+- `SEARCH_WAIT_TIME` ：设置从youtube上搜索视频时，每次搜索后等待的时间，格式为`[min, max]`，单位为秒。
+
+- `VIDEO_RES` ：设置输出视频的分辨率，格式为`(width, height)`。
+
+- `VIDEO_TRANS_ENABLE` ：设置生成完整视频时，是否启用视频片段之间的过渡效果，默认为`true`，会在每个视频片段之间添加过渡效果。
+
+- `VIDEO_TRANS_TIME` ：设置生成完整视频时，两个视频片段之间的过渡时间，单位为秒。
+
+- `USE_ALL_CACHE` ：生成图片和视频需要一定时间。如果设置为`true`，则使用本地已经生成的缓存，从而跳过重新生成的步骤，推荐在已经获取过数据但是合成视频失败或中断后使用。如果你需要从水鱼更新新的b50数据，请设置为`false`。
+
+- `ONLY_GENERATE_CLIPS` ：设置为是否只生成视频片段，如果设置为`true`，则只会在`./videos/{USER_ID}`文件夹下生成每个b的视频片段，而不会生成完整的视频。
 
 ### 完整B50视频生成操作流程
 
