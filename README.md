@@ -1,6 +1,6 @@
 # mai-gen-videob50
 
-自动从流媒体上搜索并构建你的舞萌DX B50视频对于落雪咖啡屋的
+自动从流媒体上搜索并构建你的舞萌DX B50视频对于落雪咖啡屋的用户
 
 Auto search and generate your best 50 videoes of MaimaiDX
 
